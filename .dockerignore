@@ -1,0 +1,10 @@
+node_modules
+.env
+data
+.git
+test-results
+playwright-report
+test
+.deploy
+.env.*
+assets

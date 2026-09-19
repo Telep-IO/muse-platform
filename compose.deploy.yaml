@@ -1,0 +1,55 @@
+services:
+  papersend:
+    image: papersend:local
+    restart: unless-stopped
+    init: true
+    env_file:
+      - path: .deploy/runtime.env
+        format: raw
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATA_DIR: /app/data
+      NODE_ENV: production
+      TRUST_PROXY: 1
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    volumes:
+      - papersend-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    cpus: 1.5
+    pids_limit: 96
+    stop_grace_period: 15s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  caddy:
+    image: caddy:2-alpine
+    profiles: [edge]
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Run make deploy to configure the domain}
+      ACME_EMAIL: ${ACME_EMAIL:?Run make deploy to configure certificate contact}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      papersend:
+        condition: service_healthy
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+volumes:
+  papersend-data:
+  caddy-data:
+  caddy-config:
