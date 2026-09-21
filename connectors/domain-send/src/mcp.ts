@@ -22,7 +22,7 @@ const tools: McpTool[] = [
   {
     name: "register_domain",
     description:
-      "Prepare a DomainSend registration draft for a domain name (1-2 year term, WHOIS privacy included). Returns a review URL. Does not register anything — the human must review the domain, term, and price and pay. Gateway fulfillment is currently stubbed.",
+      "Prepare a DomainSend registration draft for a domain name (1-2 year term, WHOIS privacy planned). Returns a review URL. Does not register anything — the human must review the domain, term, and price and pay. Gateway fulfillment is currently stubbed.",
     inputSchema: {
       type: "object",
       additionalProperties: false,

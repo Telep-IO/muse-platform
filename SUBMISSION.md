@@ -41,9 +41,12 @@ Index of all connectors: `https://api.muse.telep.io/v1`
 
 ## Privacy & terms
 
-- Platform privacy: https://muse.telep.io/privacy
-- Platform terms: https://muse.telep.io/terms
-- Product-specific notes: catalog page and connector repo `policies/` if present
+Use the per-connector pages in the Muse form (not the platform-wide notices):
+
+- Connector privacy: https://muse.telep.io/connectors/{slug}/privacy
+- Connector terms: https://muse.telep.io/connectors/{slug}/terms
+- Platform privacy (footer / catalog-wide): https://muse.telep.io/privacy
+- Platform terms (footer / catalog-wide): https://muse.telep.io/terms
 
 ## Trust model (keep this)
 

@@ -24,6 +24,7 @@ export const connectors: Connector[] = [
       "Mail this PDF to 1600 Pennsylvania Avenue NW, Washington DC 20500 from my home address.",
       "Prepare a one-page letter to my landlord and give me a review link before anything is printed.",
       "What’s the price to mail a 3-page US Letter PDF?",
+      "Show me all my recent mail jobs.",
     ],
     productNotes:
       "First Telep connector submitted to Meta’s Muse Connector Platform. Gateway jobs are stubs until the mail provider is wired here; live print still lives in the PaperSend app. Status ‘submitted’ means Telep filed the connector for Meta review — it is not a Meta partnership, endorsement, or directory listing.",
@@ -47,6 +48,7 @@ export const connectors: Connector[] = [
     examplePrompts: [
       "Summarize this YouTube video and pull out the three action items.",
       "What’s the thesis of this talk, in six sentences?",
+      "Give me the key takeaways from this video.",
     ],
     productNotes:
       "Gateway summaries are in-memory stubs hashed from the YouTube URL. No captions are fetched and no paid summarization API is called. Status ‘ready’ means the module is callable on api.muse.telep.io — not that Meta listed or endorsed it.",
@@ -70,6 +72,8 @@ export const connectors: Connector[] = [
     examplePrompts: [
       "Where is package 1Z999AA10123456784?",
       "Has my USPS package been delivered yet?",
+      "Watch this tracking number so it stays on my list.",
+      "List the packages I’m tracking.",
     ],
     productNotes:
       "Gateway parcels are in-memory stubs. The timeline is hashed from the tracking number; no UPS, USPS, FedEx, or DHL API is called. Status ‘ready’ means the module is callable on api.muse.telep.io — not that Meta listed or endorsed it.",
@@ -93,6 +97,8 @@ export const connectors: Connector[] = [
     examplePrompts: [
       "Get this contract signed by Alex at alex@example.com.",
       "Prepare a signature envelope for this PDF and give me a review link.",
+      "Has Alex signed the contract yet?",
+      "Show me all my pending signature envelopes.",
     ],
     productNotes: "On the gateway as a stub: envelopes, review, and demo state transitions work; provider integration pending.",
     gatewayImplemented: true,
@@ -114,6 +120,8 @@ export const connectors: Connector[] = [
       "Muse prepares the fax and destination number. You review the pages and pay before anything is transmitted.",
     examplePrompts: [
       "Fax this PDF to +1-216-555-0100 with a cover sheet that says ‘for records’.",
+      "Did my fax to the doctor’s office go through?",
+      "Show me my recent faxes.",
     ],
     productNotes: "On the gateway as a stub: faxes, review, and demo state transitions work; provider integration pending.",
     gatewayImplemented: true,
@@ -134,7 +142,9 @@ export const connectors: Connector[] = [
     howMuseUsesIt:
       "Muse drafts a short script. You read it, edit if needed, and pay before the call is placed.",
     examplePrompts: [
-      "Call the pharmacy and ask if my prescription is ready. Here’s the script I want read verbatim.",
+      "Call the pharmacy and read this message verbatim: my prescription should be ready today. Here’s the exact script.",
+      "Did my call to the pharmacy complete?",
+      "Show me my recent calls.",
     ],
     productNotes: "On the gateway as a stub: calls, review, and demo state transitions work; provider integration pending. Verbatim TTS script only.",
     gatewayImplemented: true,
@@ -156,6 +166,8 @@ export const connectors: Connector[] = [
       "Muse drafts the note. You approve the handwriting preview and address, then pay, before the robot writes and mails it.",
     examplePrompts: [
       "Write a thank-you note to my aunt and mail it in handwriting, not a printed letter.",
+      "Has my letter to Aunt Mary been mailed yet?",
+      "Show me my recent letters.",
     ],
     productNotes: "On the gateway as a stub: letters, review, and demo state transitions work; provider integration pending.",
     gatewayImplemented: true,
@@ -163,7 +175,7 @@ export const connectors: Connector[] = [
   {
     slug: "domain-send",
     name: "DomainSend",
-    oneLiner: "Register a domain name (WHOIS privacy included).",
+    oneLiner: "Register a domain name (WHOIS privacy planned).",
     status: "planned",
     category: "identity",
     pricingBlurb: "$14.99 / year for .com (planned).",
@@ -177,6 +189,8 @@ export const connectors: Connector[] = [
       "Muse checks availability and prepares a registration. You confirm the name, contacts, and price before anything is purchased.",
     examplePrompts: [
       "Is studio-telep.com available? If so, prepare a registration for me to approve.",
+      "Check if telep.tools is available.",
+      "Show me the details on my studio-telep.com registration draft.",
     ],
     productNotes: "On the gateway as a stub: availability checks, registration drafts, and demo state transitions work; provider integration pending.",
     gatewayImplemented: true,

@@ -1,20 +1,40 @@
+import Link from "next/link";
+import { listConnectors } from "@telep/registry";
+import { LEGAL_DISCLAIMER, LEGAL_UPDATED } from "@/lib/legal";
+
 export const metadata = { title: "Terms" };
 
 export default function TermsPage() {
+  const connectors = listConnectors();
+
   return (
     <article className="product-hero prose">
       <div className="kicker">Telep IO</div>
       <h1>Terms</h1>
-      <p>Last updated 21 September 2026. Contact jon@telep.io.</p>
+      <p>Last updated {LEGAL_UPDATED}. Contact jon@telep.io.</p>
+      <p>{LEGAL_DISCLAIMER}</p>
       <p>
         The Telep Muse catalog and gateway are provided by Telep IO. They are independent of Meta.
         Listing a connector here is not a claim that Meta approved, featured, or partnered on it.
       </p>
+      <p>
+        Each connector has its own terms of service. Those pages are the ones to paste into Meta Muse
+        submission forms:
+      </p>
+      <ul>
+        {connectors.map((connector) => (
+          <li key={connector.slug}>
+            <Link href={connector.termsPath}>
+              {connector.name} terms
+            </Link>
+          </li>
+        ))}
+      </ul>
       <h2>The service</h2>
       <p>
-        The catalog describes Telep connectors. The gateway exposes HTTP and MCP endpoints. v0
-        PaperSend jobs are stubs: creating a job does not mail a letter, charge a card, or bind a
-        provider.
+        The catalog describes Telep connectors. The gateway exposes HTTP and MCP endpoints for every
+        connector with <code>gatewayImplemented: true</code> (all eight today). Every current
+        gateway module is a stub: creating a job does not fulfill, charge, or bind a provider.
       </p>
       <h2>Acceptable use</h2>
       <ul>
@@ -25,7 +45,8 @@ export default function TermsPage() {
       <h2>No warranty</h2>
       <p>
         Software is provided as-is. Status badges are Telep’s internal states. “Submitted” means
-        Telep filed a connector for Meta review, not that Muse users can see it.
+        Telep filed a connector for Meta review, not that Muse users can see it, and not that Meta
+        approved or featured it.
       </p>
       <h2>Contact</h2>
       <p>

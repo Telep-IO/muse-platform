@@ -3,7 +3,11 @@ import { catalogUrl } from "@/lib/site";
 
 export default function sitemap() {
   const staticPaths = ["/", "/connectors", "/docs", "/privacy", "/terms"];
-  const connectorPaths = listConnectors().map((connector) => `/connectors/${connector.slug}`);
+  const connectorPaths = listConnectors().flatMap((connector) => [
+    `/connectors/${connector.slug}`,
+    connector.privacyPath,
+    connector.termsPath,
+  ]);
   return [...staticPaths, ...connectorPaths].map((path) => ({
     url: catalogUrl(path),
     lastModified: new Date("2026-09-21"),

@@ -21,7 +21,7 @@ export const PRICE_PER_PAGE_CENTS = 99;
 export const MAX_PAGES = 10;
 
 const STUB_NOTE =
-  "Gateway stub: fax is recorded in-memory only. Fax provider fulfillment (Phaxio / Telnyx) is not wired on this gateway yet. Do not treat this as a transmitted fax.";
+  "Gateway stub: fax is recorded in-memory only. Fax provider fulfillment (Sinch Fax API v3, formerly Phaxio) is not wired on this gateway yet. Do not treat this as a transmitted fax.";
 
 const faxes = new Map<string, Fax>();
 

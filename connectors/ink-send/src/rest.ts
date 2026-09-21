@@ -22,7 +22,7 @@ export async function handleInkSendRest(
       Response.json({
         slug: "ink-send",
         name: "InkSend",
-        status: "building",
+        status: "planned",
         fulfillment: "stub",
         price: `$${(PRICE_CENTS / 100).toFixed(2)} per letter`,
         limits: "cards: plain, thank-you, condolence, holiday",
