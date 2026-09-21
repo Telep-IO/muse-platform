@@ -1,6 +1,11 @@
 import { authenticate, emptySpec, isWriteMethod, jsonError, mergeOpenApi, publicApiUrl, rateLimit, rateLimitHeaders, withCors } from "@telep/platform";
 import { connectorCount, getConnector, listConnectors } from "@telep/registry";
 import { handlePaperSendMcp, handlePaperSendRest, paperSendOpenApi } from "@telep/paper-send";
+import { handleSignSendMcp, handleSignSendRest, signSendOpenApi } from "@telep/sign-send";
+import { handleFaxSendMcp, handleFaxSendRest, faxSendOpenApi } from "@telep/fax-send";
+import { handleCallSendMcp, handleCallSendRest, callSendOpenApi } from "@telep/call-send";
+import { handleInkSendMcp, handleInkSendRest, inkSendOpenApi } from "@telep/ink-send";
+import { handleDomainSendMcp, handleDomainSendRest, domainSendOpenApi } from "@telep/domain-send";
 
 export function platformOpenApi() {
   const spec = emptySpec({
@@ -30,7 +35,14 @@ export function platformOpenApi() {
     },
   };
   spec.tags = [{ name: "platform", description: "Gateway" }];
-  return mergeOpenApi(spec, [paperSendOpenApi()]);
+  return mergeOpenApi(spec, [
+    paperSendOpenApi(),
+    signSendOpenApi(),
+    faxSendOpenApi(),
+    callSendOpenApi(),
+    inkSendOpenApi(),
+    domainSendOpenApi(),
+  ]);
 }
 
 export function healthPayload() {
@@ -85,6 +97,26 @@ export async function dispatchRest(request: Request, slug: string, path: string[
     return handlePaperSendRest(request, path, auth);
   }
 
+  if (slug === "sign-send") {
+    return handleSignSendRest(request, path, auth);
+  }
+
+  if (slug === "fax-send") {
+    return handleFaxSendRest(request, path, auth);
+  }
+
+  if (slug === "call-send") {
+    return handleCallSendRest(request, path, auth);
+  }
+
+  if (slug === "ink-send") {
+    return handleInkSendRest(request, path, auth);
+  }
+
+  if (slug === "domain-send") {
+    return handleDomainSendRest(request, path, auth);
+  }
+
   if (path[0] === "openapi.json") {
     const spec = emptySpec({
       title: connector.name,
@@ -111,6 +143,21 @@ export async function dispatchMcp(request: Request, slug: string): Promise<Respo
   }
   if (slug === "paper-send") {
     return handlePaperSendMcp(request);
+  }
+  if (slug === "sign-send") {
+    return handleSignSendMcp(request);
+  }
+  if (slug === "fax-send") {
+    return handleFaxSendMcp(request);
+  }
+  if (slug === "call-send") {
+    return handleCallSendMcp(request);
+  }
+  if (slug === "ink-send") {
+    return handleInkSendMcp(request);
+  }
+  if (slug === "domain-send") {
+    return handleDomainSendMcp(request);
   }
   return withCors(
     request,

@@ -20,6 +20,11 @@
   },
   "dependencies": {
     "@telep/paper-send": "*",
+    "@telep/sign-send": "*",
+    "@telep/fax-send": "*",
+    "@telep/call-send": "*",
+    "@telep/ink-send": "*",
+    "@telep/domain-send": "*",
     "@telep/platform": "*",
     "@telep/registry": "*",
     "@vercel/analytics": "^2.0.1",

@@ -90,8 +90,8 @@ export const connectors: Connector[] = [
       "Get this contract signed by Alex at alex@example.com.",
       "Prepare a signature envelope for this PDF and give me a review link.",
     ],
-    productNotes: "Scaffold. Provider integration pending. Not live on the gateway yet.",
-    gatewayImplemented: false,
+    productNotes: "On the gateway as a stub: envelopes, review, and demo state transitions work; provider integration pending.",
+    gatewayImplemented: true,
   },
   {
     slug: "fax-send",
@@ -111,8 +111,8 @@ export const connectors: Connector[] = [
     examplePrompts: [
       "Fax this PDF to +1-216-555-0100 with a cover sheet that says ‘for records’.",
     ],
-    productNotes: "Scaffold. Provider integration pending. Not live on the gateway yet.",
-    gatewayImplemented: false,
+    productNotes: "On the gateway as a stub: faxes, review, and demo state transitions work; provider integration pending.",
+    gatewayImplemented: true,
   },
   {
     slug: "call-send",
@@ -132,8 +132,8 @@ export const connectors: Connector[] = [
     examplePrompts: [
       "Call the pharmacy and ask if my prescription is ready. Here’s the script I want read verbatim.",
     ],
-    productNotes: "Planned Muse connector. Scaffold only.",
-    gatewayImplemented: false,
+    productNotes: "On the gateway as a stub: calls, review, and demo state transitions work; provider integration pending. Verbatim TTS script only.",
+    gatewayImplemented: true,
   },
   {
     slug: "ink-send",
@@ -153,8 +153,8 @@ export const connectors: Connector[] = [
     examplePrompts: [
       "Write a thank-you note to my aunt and mail it in handwriting, not a printed letter.",
     ],
-    productNotes: "Planned Muse connector. Scaffold only.",
-    gatewayImplemented: false,
+    productNotes: "On the gateway as a stub: letters, review, and demo state transitions work; provider integration pending.",
+    gatewayImplemented: true,
   },
   {
     slug: "domain-send",
@@ -174,8 +174,8 @@ export const connectors: Connector[] = [
     examplePrompts: [
       "Is studio-telep.com available? If so, prepare a registration for me to approve.",
     ],
-    productNotes: "Planned Muse connector. Scaffold only.",
-    gatewayImplemented: false,
+    productNotes: "On the gateway as a stub: availability checks, registration drafts, and demo state transitions work; provider integration pending.",
+    gatewayImplemented: true,
   },
 ];
 
