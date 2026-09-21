@@ -1,0 +1,76 @@
+# Phase 0 — Telep Muse platform conventions
+
+Contact: jon@telep.io. Company: Telep IO.
+
+These rules exist so the next ~100 connectors can land without renaming the world.
+
+## Hostnames
+
+| Surface | Production host | Local / preview |
+| --- | --- | --- |
+| Catalog | `muse.telep.io` | `NEXT_PUBLIC_CATALOG_URL` (default `http://localhost:3000`) |
+| Gateway | `api.muse.telep.io` | `NEXT_PUBLIC_API_URL` (same origin locally) |
+
+If the `Host` header **contains** `api.`, the app is gateway-first: `/` rewrites to `/v1`. Path prefixes always work, so a single Vercel preview URL can serve both catalog and API.
+
+Cloudflare: both `muse.telep.io` and `api.muse.telep.io` CNAME to this Vercel project. Jonathan owns DNS.
+
+## Path scheme
+
+```
+GET  /health                         → { ok, service: "muse-platform", connectors: N }
+GET  /v1                             → connector index
+GET  /v1/openapi.json                → merged OpenAPI
+GET  /v1/{slug}                      → connector descriptor
+GET|POST /v1/{slug}/...              → connector REST
+GET|POST /mcp/{slug}                 → MCP streamable HTTP
+POST /v1/billing/checkout            → Stripe Checkout helper
+POST /v1/billing/webhook             → Stripe webhook helper
+```
+
+Catalog:
+
+```
+/  /connectors  /connectors/{slug}  /docs  /privacy  /terms
+```
+
+## API keys
+
+Format: `muse_sk_{env}_{token}`
+
+- `env` is `demo`, `test`, or `live`
+- `token` is at least 8 alphanumeric characters
+- Header: `Authorization: Bearer <key>`
+- Configure via `MUSE_API_KEYS` (comma-separated)
+- **Write routes** and job reads reject a missing/unknown key with `401`
+- `GET /health`, `GET /v1`, OpenAPI, and connector descriptors are public
+
+Do not commit live keys. Rotate by replacing the env var.
+
+## Registry
+
+`packages/registry` is the source of truth for catalog cards **and** gateway routing.
+
+Required fields: `slug`, `name`, `oneLiner`, `status` (`submitted` | `building` | `ready` | `planned`), `category`, `pricingBlurb`, `repoUrl?`, `docsPath`, `apiBasePath` (`/v1/{slug}`), `mcpPath` (`/mcp/{slug}`), `privacyPath`, `termsPath`, plus `howMuseUsesIt`, `examplePrompts`, `gatewayImplemented`.
+
+Do not list BarkMarks or CallCatch as catalog heroes.
+
+## How to add a connector
+
+1. Add a registry entry in `packages/registry/src/connectors.ts`.
+2. Create `connectors/{slug}` exporting REST + MCP + OpenAPI. Copy `connectors/paper-send` as the shape.
+3. Wire `slug` in `lib/gateway.ts` (`dispatchRest` / `dispatchMcp`).
+4. Catalog pages pick it up automatically.
+5. Until the module exists, the gateway returns `501` with a repo link — that is expected.
+6. Fill [SUBMISSION.md](SUBMISSION.md) before sending Meta a listing. Use gateway URLs, not localhost.
+7. Never claim Meta partnership, endorsement, or directory placement unless Meta has actually listed the connector.
+
+## Stripe
+
+`packages/platform` exposes Checkout session create + webhook verification. They stay in **stub mode** unless `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are set. Use Stripe test mode until a connector is actually charging.
+
+## Honesty
+
+- Telep connectors are independent software. Meta’s Muse Connector Platform is Meta’s product.
+- PaperSend gateway jobs are in-memory stubs. “Submitted to printer” never comes from this v0 edge.
+- Rate limiting is an in-memory stub. Replace before production load.
