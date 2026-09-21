@@ -30,7 +30,7 @@ export const MAX_PAGES = 5;
 export const MAX_SIGNERS = 5;
 
 const STUB_NOTE =
-  "Gateway stub: envelope is recorded in-memory only. E-signature provider fulfillment (Dropbox Sign / DocuSign) is not wired on this gateway yet. Do not treat this as a sent signature request.";
+  "Gateway stub: envelope is recorded in-memory only. E-signature provider fulfillment (DocuSign planned) is not wired on this gateway yet. Do not treat this as a sent signature request.";
 
 const envelopes = new Map<string, Envelope>();
 

@@ -22,7 +22,7 @@ export async function handleCallSendRest(
       Response.json({
         slug: "call-send",
         name: "CallSend",
-        status: "building",
+        status: "planned",
         fulfillment: "stub",
         price: `$${(PRICE_CENTS / 100).toFixed(2)} per call`,
         limits: "verbatim TTS script, up to ~5 minutes",

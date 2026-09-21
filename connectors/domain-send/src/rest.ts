@@ -22,7 +22,7 @@ export async function handleDomainSendRest(
       Response.json({
         slug: "domain-send",
         name: "DomainSend",
-        status: "building",
+        status: "planned",
         fulfillment: "stub",
         price: "from $13.99/yr (.org)",
         limits: "registration only in v1, no renewals; TLDs: com, net, org, io, dev, app, tools; 1-2 year terms",
