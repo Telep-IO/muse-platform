@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { apiUrl } from "@/lib/site";
 
 export function TryItForm() {
   const [out, setOut] = useState("Submit to create a stub PaperSend job.");
@@ -13,7 +12,7 @@ export function TryItForm() {
     const key = String(form.get("key") || "");
     setBusy(true);
     try {
-      const response = await fetch(apiUrl("/v1/paper-send/jobs"), {
+      const response = await fetch("/v1/paper-send/jobs", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${key}`,

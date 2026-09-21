@@ -52,7 +52,8 @@ POST ${apiUrl("/mcp/{slug}")}`}</code>
         <code>POST /v1/paper-send/jobs</code> records an in-memory draft. It does not print or mail.
         The live PaperSend app still owns PDF rasterization and the mail provider. MCP tools:{" "}
         <code>create_mail_job</code>, <code>get_job</code>, <code>list_jobs</code> at{" "}
-        <code>{apiUrl("/mcp/paper-send")}</code>.
+        <code>{apiUrl("/mcp/paper-send")}</code>. The try-it form posts to this origin so local,
+        preview, and production catalog hosts all work without CORS gymnastics.
       </p>
       <TryItForm />
 
