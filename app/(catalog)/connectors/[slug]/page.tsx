@@ -52,10 +52,20 @@ export default async function ConnectorPage({ params }: { params: Promise<{ slug
           <dt>API base</dt>
           <dd>
             <code>{apiUrl(connector.apiBasePath)}</code>
+            {connector.gatewayImplemented
+              ? " — live on this gateway (callable stub)"
+              : " — not served on this gateway yet"}
           </dd>
           <dt>MCP</dt>
           <dd>
             <code>{apiUrl(connector.mcpPath)}</code>
+            {connector.gatewayImplemented
+              ? " — live on this gateway (streamable HTTP JSON-RPC)"
+              : " — not served on this gateway yet"}
+          </dd>
+          <dt>OpenAPI</dt>
+          <dd>
+            <code>{apiUrl(`${connector.apiBasePath}/openapi.json`)}</code>
           </dd>
           <dt>Pricing</dt>
           <dd>{connector.pricingBlurb}</dd>

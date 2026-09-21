@@ -27,6 +27,8 @@
     "@telep/domain-send": "*",
     "@telep/platform": "*",
     "@telep/registry": "*",
+    "@telep/shipsignal": "*",
+    "@telep/sumvid": "*",
     "@vercel/analytics": "^2.0.1",
     "next": "^15.5.4",
     "react": "^19.1.1",

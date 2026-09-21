@@ -17,6 +17,9 @@ app/                    Catalog pages + gateway route handlers
 packages/registry/      Typed connector catalog (source of truth)
 packages/platform/      Auth, CORS, errors, rate-limit stub, OpenAPI merge, Stripe helpers, MCP HTTP
 connectors/paper-send/  First callable module (REST + MCP + OpenAPI)
+connectors/sumvid/      YouTube summarize stub (REST + MCP + OpenAPI)
+connectors/shipsignal/  Package tracking stub (REST + MCP + OpenAPI)
+connectors/*-send/      Sign/fax/call/ink/domain stubs (REST + MCP + OpenAPI)
 lib/gateway.ts          Dispatch: slug → module
 middleware.ts           api.* host rewrites `/` → `/v1`
 ```
@@ -42,6 +45,14 @@ curl -H "Authorization: Bearer muse_sk_demo_localdev" \
   -H "Content-Type: application/json" \
   -d '{"sender":{"name":"A","address_line1":"1 Main","address_city":"Cleveland","address_state":"OH","address_zip":"44113"},"recipient":{"name":"B","address_line1":"2 Main","address_city":"Cleveland","address_state":"OH","address_zip":"44114"},"document":{"pages":1}}' \
   http://localhost:3000/v1/paper-send/jobs
+curl -H "Authorization: Bearer muse_sk_demo_localdev" \
+  -H "Content-Type: application/json" \
+  -d '{"youtubeUrl":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"}' \
+  http://localhost:3000/v1/sumvid/summaries
+curl -H "Authorization: Bearer muse_sk_demo_localdev" \
+  -H "Content-Type: application/json" \
+  -d '{"trackingNumber":"1Z999AA10123456784"}' \
+  http://localhost:3000/v1/shipsignal/parcels
 ```
 
 ```sh
@@ -94,4 +105,4 @@ See [FOUNDATION.md](FOUNDATION.md) for hostname, path, key format, and how to ad
 
 ## Status honesty
 
-PaperSend’s gateway routes are **callable stubs**. They do not print or mail. Live fulfillment remains in [paper-send](https://github.com/Telep-IO/paper-send) until the mail provider is wired here. “Submitted” means Telep filed the connector for Meta review — not that Muse listed it.
+PaperSend, Sumvid, ShipSignal, and the *-send connectors (SignSend, FaxSend, CallSend, InkSend, DomainSend) are **callable stubs** on this gateway. They do not print, summarize from captions, poll carriers, request live signatures, transmit faxes, place calls, robot-write letters, or register domains. “Submitted” means Telep filed the connector for Meta review — not that Muse listed it. “Ready” means the module is callable on this gateway, not that Meta listed or endorsed it.

@@ -73,4 +73,6 @@ Do not list BarkMarks or CallCatch as catalog heroes.
 
 - Telep connectors are independent software. Meta’s Muse Connector Platform is Meta’s product.
 - PaperSend gateway jobs are in-memory stubs. “Submitted to printer” never comes from this v0 edge.
+- Sumvid summaries are hashed from the YouTube video id. Captions are not fetched; no paid summarizer is called.
+- ShipSignal timelines are hashed from the tracking number. No carrier API is called; `carrierGuess` is from number shape only.
 - Rate limiting is an in-memory stub. Replace before production load.

@@ -1,4 +1,4 @@
-import { authenticate, emptySpec, isWriteMethod, jsonError, mergeOpenApi, publicApiUrl, rateLimit, rateLimitHeaders, withCors } from "@telep/platform";
+import { authenticate, emptySpec, isWriteMethod, jsonError, mergeOpenApi, publicApiUrl, rateLimit, rateLimitHeaders, withCors, type AuthResult } from "@telep/platform";
 import { connectorCount, getConnector, listConnectors } from "@telep/registry";
 import { handlePaperSendMcp, handlePaperSendRest, paperSendOpenApi } from "@telep/paper-send";
 import { handleSignSendMcp, handleSignSendRest, signSendOpenApi } from "@telep/sign-send";
@@ -6,6 +6,40 @@ import { handleFaxSendMcp, handleFaxSendRest, faxSendOpenApi } from "@telep/fax-
 import { handleCallSendMcp, handleCallSendRest, callSendOpenApi } from "@telep/call-send";
 import { handleInkSendMcp, handleInkSendRest, inkSendOpenApi } from "@telep/ink-send";
 import { handleDomainSendMcp, handleDomainSendRest, domainSendOpenApi } from "@telep/domain-send";
+import { handleSumvidMcp, handleSumvidRest, sumvidOpenApi } from "@telep/sumvid";
+import { handleShipSignalMcp, handleShipSignalRest, shipSignalOpenApi } from "@telep/shipsignal";
+
+type RestHandler = (request: Request, path: string[], auth: AuthResult | null) => Promise<Response>;
+type McpHandler = (request: Request) => Promise<Response>;
+
+const restHandlers: Record<string, RestHandler> = {
+  "paper-send": handlePaperSendRest,
+  "sign-send": handleSignSendRest,
+  "fax-send": handleFaxSendRest,
+  "call-send": handleCallSendRest,
+  "ink-send": handleInkSendRest,
+  "domain-send": handleDomainSendRest,
+  sumvid: handleSumvidRest,
+  shipsignal: handleShipSignalRest,
+};
+
+const mcpHandlers: Record<string, McpHandler> = {
+  "paper-send": handlePaperSendMcp,
+  "sign-send": handleSignSendMcp,
+  "fax-send": handleFaxSendMcp,
+  "call-send": handleCallSendMcp,
+  "ink-send": handleInkSendMcp,
+  "domain-send": handleDomainSendMcp,
+  sumvid: handleSumvidMcp,
+  shipsignal: handleShipSignalMcp,
+};
+
+function restAuthRequired(method: string, path: string[]): boolean {
+  if (isWriteMethod(method)) return true;
+  const first = path.filter(Boolean)[0];
+  if (!first || first === "openapi.json") return false;
+  return true;
+}
 
 export function platformOpenApi() {
   const spec = emptySpec({
@@ -42,6 +76,8 @@ export function platformOpenApi() {
     callSendOpenApi(),
     inkSendOpenApi(),
     domainSendOpenApi(),
+    sumvidOpenApi(),
+    shipSignalOpenApi(),
   ]);
 }
 
@@ -85,36 +121,16 @@ export async function dispatchRest(request: Request, slug: string, path: string[
 
   let auth = null;
   try {
-    const jobsRead = path[0] === "jobs";
-    auth = authenticate(request, { required: isWriteMethod(request.method) || jobsRead });
+    auth = authenticate(request, { required: restAuthRequired(request.method, path) });
   } catch (error) {
     if (error instanceof Error) {
       return withCors(request, jsonError(401, "unauthorized", error.message));
     }
   }
 
-  if (slug === "paper-send") {
-    return handlePaperSendRest(request, path, auth);
-  }
-
-  if (slug === "sign-send") {
-    return handleSignSendRest(request, path, auth);
-  }
-
-  if (slug === "fax-send") {
-    return handleFaxSendRest(request, path, auth);
-  }
-
-  if (slug === "call-send") {
-    return handleCallSendRest(request, path, auth);
-  }
-
-  if (slug === "ink-send") {
-    return handleInkSendRest(request, path, auth);
-  }
-
-  if (slug === "domain-send") {
-    return handleDomainSendRest(request, path, auth);
+  const rest = restHandlers[slug];
+  if (rest) {
+    return rest(request, path, auth);
   }
 
   if (path[0] === "openapi.json") {
@@ -141,23 +157,9 @@ export async function dispatchMcp(request: Request, slug: string): Promise<Respo
   if (!connector) {
     return withCors(request, jsonError(404, "not_found", `Unknown connector: ${slug}`));
   }
-  if (slug === "paper-send") {
-    return handlePaperSendMcp(request);
-  }
-  if (slug === "sign-send") {
-    return handleSignSendMcp(request);
-  }
-  if (slug === "fax-send") {
-    return handleFaxSendMcp(request);
-  }
-  if (slug === "call-send") {
-    return handleCallSendMcp(request);
-  }
-  if (slug === "ink-send") {
-    return handleInkSendMcp(request);
-  }
-  if (slug === "domain-send") {
-    return handleDomainSendMcp(request);
+  const mcp = mcpHandlers[slug];
+  if (mcp) {
+    return mcp(request);
   }
   return withCors(
     request,

@@ -37,7 +37,7 @@ export const connectors: Connector[] = [
     category: "media",
     pricingBlurb: "See the Sumvid product for current pricing.",
     repoUrl: "https://github.com/Telep-IO/sumvid-muse",
-    docsPath: "/docs",
+    docsPath: "/docs#sumvid",
     apiBasePath: "/v1/sumvid",
     mcpPath: "/mcp/sumvid",
     privacyPath: "/privacy",
@@ -48,7 +48,9 @@ export const connectors: Connector[] = [
       "Summarize this YouTube video and pull out the three action items.",
       "What’s the thesis of this talk, in six sentences?",
     ],
-    gatewayImplemented: false,
+    productNotes:
+      "Gateway summaries are in-memory stubs hashed from the YouTube URL. No captions are fetched and no paid summarization API is called. Status ‘ready’ means the module is callable on api.muse.telep.io — not that Meta listed or endorsed it.",
+    gatewayImplemented: true,
   },
   {
     slug: "shipsignal",
@@ -58,7 +60,7 @@ export const connectors: Connector[] = [
     category: "logistics",
     pricingBlurb: "See the ShipSignal product for current pricing.",
     repoUrl: "https://github.com/Telep-IO/shipsignal-muse",
-    docsPath: "/docs",
+    docsPath: "/docs#shipsignal",
     apiBasePath: "/v1/shipsignal",
     mcpPath: "/mcp/shipsignal",
     privacyPath: "/privacy",
@@ -69,7 +71,9 @@ export const connectors: Connector[] = [
       "Where is package 1Z999AA10123456784?",
       "Has my USPS package been delivered yet?",
     ],
-    gatewayImplemented: false,
+    productNotes:
+      "Gateway parcels are in-memory stubs. The timeline is hashed from the tracking number; no UPS, USPS, FedEx, or DHL API is called. Status ‘ready’ means the module is callable on api.muse.telep.io — not that Meta listed or endorsed it.",
+    gatewayImplemented: true,
   },
   {
     slug: "sign-send",
