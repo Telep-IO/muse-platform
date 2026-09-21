@@ -3,6 +3,11 @@ import { after, before, test } from "node:test";
 import { getConnector, listConnectors } from "@telep/registry";
 import { authenticate, isApiHost, KEY_PATTERN, lookupKey } from "@telep/platform";
 import { handlePaperSendMcp, handlePaperSendRest, resetJobs } from "@telep/paper-send";
+import { handleSignSendMcp, handleSignSendRest, resetEnvelopes } from "@telep/sign-send";
+import { handleFaxSendMcp, handleFaxSendRest, resetFaxes } from "@telep/fax-send";
+import { handleCallSendMcp, handleCallSendRest, resetCalls } from "@telep/call-send";
+import { handleInkSendMcp, handleInkSendRest, resetLetters } from "@telep/ink-send";
+import { handleDomainSendMcp, handleDomainSendRest, resetDomains } from "@telep/domain-send";
 import { healthPayload, v1Index } from "../lib/gateway";
 
 const DEMO = "muse_sk_demo_localdev";
@@ -15,6 +20,11 @@ before(() => {
 
 after(() => {
   resetJobs();
+  resetEnvelopes();
+  resetFaxes();
+  resetCalls();
+  resetLetters();
+  resetDomains();
 });
 
 test("registry loads paper-send as submitted", () => {
@@ -172,4 +182,384 @@ test("host detection treats api. as gateway-first", () => {
   assert.equal(isApiHost("api.muse.telep.io"), true);
   assert.equal(isApiHost("muse.telep.io"), false);
   assert.equal(isApiHost("localhost:3000"), false);
+});
+
+test("sign-send descriptor, registry, and OpenAPI wiring", async () => {
+  const conn = getConnector("sign-send");
+  assert.equal(conn?.apiBasePath, "/v1/sign-send");
+  assert.equal(conn?.mcpPath, "/mcp/sign-send");
+  assert.equal(conn?.gatewayImplemented, true);
+
+  const desc = await handleSignSendRest(
+    new Request("http://localhost/v1/sign-send"),
+    [],
+    lookupKey(DEMO),
+  );
+  assert.equal(desc.status, 200);
+  const descJson = (await desc.json()) as { slug: string; fulfillment: string };
+  assert.equal(descJson.slug, "sign-send");
+  assert.equal(descJson.fulfillment, "stub");
+
+  const spec = await handleSignSendRest(
+    new Request("http://localhost/v1/sign-send/openapi.json"),
+    ["openapi.json"],
+    lookupKey(DEMO),
+  );
+  assert.equal(spec.status, 200);
+  const specJson = (await spec.json()) as { paths: Record<string, unknown> };
+  assert.ok(specJson.paths["/v1/sign-send/envelopes"]);
+});
+
+test("sign-send envelope lifecycle: draft -> paid -> sent -> signed", async () => {
+  resetEnvelopes();
+  const headers = {
+    Authorization: `Bearer ${DEMO}`,
+    "Content-Type": "application/json",
+  };
+  const created = await handleSignSendRest(
+    new Request("http://localhost/v1/sign-send/envelopes", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        document: { filename: "contract.pdf", pages: 3 },
+        signers: [
+          { name: "Alex", email: "alex@example.com" },
+          { name: "Blake", email: "blake@example.com" },
+        ],
+      }),
+    }),
+    ["envelopes"],
+    lookupKey(DEMO),
+  );
+  assert.equal(created.status, 201);
+  const env = (await created.json()) as {
+    id: string;
+    status: string;
+    amountCents: number;
+    signers: { order: number }[];
+    reviewUrl: string;
+  };
+  assert.equal(env.amountCents, 299);
+  assert.equal(env.status, "draft");
+  assert.deepEqual(env.signers.map((s) => s.order), [1, 2]);
+  assert.ok(env.reviewUrl.includes("/connectors/sign-send#review-"));
+
+  for (const [event, body, want] of [
+    ["paid", {}, "paid"],
+    ["sent", {}, "sent"],
+    ["signed", { signerEmail: "alex@example.com" }, "sent"],
+    ["signed", { signerEmail: "blake@example.com" }, "signed"],
+  ] as const) {
+    const res = await handleSignSendRest(
+      new Request(`http://localhost/v1/sign-send/envelopes/${env.id}/demo-event`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ event, ...body }),
+      }),
+      ["envelopes", env.id, "demo-event"],
+      lookupKey(DEMO),
+    );
+    assert.equal(res.status, 200);
+    const updated = (await res.json()) as { status: string };
+    assert.equal(updated.status, want);
+  }
+
+  const unauth = await handleSignSendRest(
+    new Request("http://localhost/v1/sign-send/envelopes", { method: "POST", body: "{}" }),
+    ["envelopes"],
+    null,
+  );
+  assert.equal(unauth.status, 401);
+});
+
+test("sign-send validation rejects bad envelopes", async () => {
+  resetEnvelopes();
+  const headers = {
+    Authorization: `Bearer ${DEMO}`,
+    "Content-Type": "application/json",
+  };
+  for (const body of [
+    { signers: [] },
+    { signers: [{ name: "No Email" }] },
+    { signers: [{ name: "A", email: "a@x.com" }, { name: "B", email: "a@x.com" }] },
+    { signers: Array.from({ length: 6 }, (_, i) => ({ name: `S${i}`, email: `s${i}@x.com` })) },
+  ]) {
+    const res = await handleSignSendRest(
+      new Request("http://localhost/v1/sign-send/envelopes", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      }),
+      ["envelopes"],
+      lookupKey(DEMO),
+    );
+    assert.equal(res.status, 400);
+  }
+});
+
+test("sign-send MCP tools/list and tools/call", async () => {
+  const listed = await handleSignSendMcp(
+    new Request("http://localhost/mcp/sign-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    }),
+  );
+  const listJson = (await listed.json()) as { result: { tools: { name: string }[] } };
+  const names = listJson.result.tools.map((t) => t.name);
+  assert.deepEqual(names.sort(), ["create_envelope", "get_envelope", "list_envelopes"].sort());
+
+  const called = await handleSignSendMcp(
+    new Request("http://localhost/mcp/sign-send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${DEMO}`,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "create_envelope",
+          arguments: {
+            signers: [{ name: "Alex", email: "alex@example.com" }],
+            document: { filename: "nda.pdf", pages: 2 },
+          },
+        },
+      }),
+    }),
+  );
+  const callJson = (await called.json()) as { result: unknown; error?: { message: string } };
+  assert.ok(!callJson.error, callJson.error?.message);
+  assert.ok(callJson.result);
+});
+
+test("fax-send lifecycle: draft -> paid -> sending -> delivered", async () => {
+  resetFaxes();
+  const headers = { Authorization: `Bearer ${DEMO}`, "Content-Type": "application/json" };
+  const created = await handleFaxSendRest(
+    new Request("http://localhost/v1/fax-send/faxes", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        to: "+12165550100",
+        document: { filename: "records.pdf", pages: 2 },
+        coverPage: true,
+      }),
+    }),
+    ["faxes"],
+    lookupKey(DEMO),
+  );
+  assert.equal(created.status, 201);
+  const fax = (await created.json()) as { id: string; status: string; amountCents: number };
+  assert.equal(fax.amountCents, 297); // 2 pages + billable cover
+  assert.equal(fax.status, "draft");
+
+  for (const [event, want] of [["paid", "paid"], ["sending", "sending"], ["delivered", "delivered"]] as const) {
+    const res = await handleFaxSendRest(
+      new Request(`http://localhost/v1/fax-send/faxes/${fax.id}/demo-event`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ event }),
+      }),
+      ["faxes", fax.id, "demo-event"],
+      lookupKey(DEMO),
+    );
+    assert.equal(res.status, 200);
+    assert.equal(((await res.json()) as { status: string }).status, want);
+  }
+
+  const bad = await handleFaxSendRest(
+    new Request("http://localhost/v1/fax-send/faxes", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ to: "555-0100", document: { pages: 1 } }),
+    }),
+    ["faxes"],
+    lookupKey(DEMO),
+  );
+  assert.equal(bad.status, 400);
+
+  const tools = await handleFaxSendMcp(
+    new Request("http://localhost/mcp/fax-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    }),
+  );
+  const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
+  assert.deepEqual(names.sort(), ["create_fax", "get_fax", "list_faxes"].sort());
+});
+
+test("call-send lifecycle: draft -> paid -> queued -> completed", async () => {
+  resetCalls();
+  const headers = { Authorization: `Bearer ${DEMO}`, "Content-Type": "application/json" };
+  const created = await handleCallSendRest(
+    new Request("http://localhost/v1/call-send/calls", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        to: "+12165550100",
+        script: "Hello, this is a test call. Please confirm your hours.",
+      }),
+    }),
+    ["calls"],
+    lookupKey(DEMO),
+  );
+  assert.equal(created.status, 201);
+  const call = (await created.json()) as { id: string; status: string; amountCents: number; voice: string };
+  assert.equal(call.amountCents, 99);
+  assert.equal(call.voice, "alloy");
+
+  for (const [event, want] of [["paid", "paid"], ["queued", "queued"], ["answered", "queued"], ["completed", "completed"]] as const) {
+    const res = await handleCallSendRest(
+      new Request(`http://localhost/v1/call-send/calls/${call.id}/demo-event`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ event }),
+      }),
+      ["calls", call.id, "demo-event"],
+      lookupKey(DEMO),
+    );
+    assert.equal(res.status, 200);
+    assert.equal(((await res.json()) as { status: string }).status, want);
+  }
+
+  const empty = await handleCallSendRest(
+    new Request("http://localhost/v1/call-send/calls", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ to: "+12165550100", script: "   " }),
+    }),
+    ["calls"],
+    lookupKey(DEMO),
+  );
+  assert.equal(empty.status, 400);
+
+  const tools = await handleCallSendMcp(
+    new Request("http://localhost/mcp/call-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    }),
+  );
+  const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
+  assert.deepEqual(names.sort(), ["create_call", "get_call", "list_calls"].sort());
+});
+
+test("ink-send lifecycle: draft -> paid -> sent", async () => {
+  resetLetters();
+  const headers = { Authorization: `Bearer ${DEMO}`, "Content-Type": "application/json" };
+  const created = await handleInkSendRest(
+    new Request("http://localhost/v1/ink-send/letters", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        message: "Thank you for everything.",
+        to: { name: "Aunt May", address_line1: "1 Main St", address_city: "Cleveland", address_state: "OH", address_zip: "44113" },
+        card: "thank-you",
+      }),
+    }),
+    ["letters"],
+    lookupKey(DEMO),
+  );
+  assert.equal(created.status, 201);
+  const letter = (await created.json()) as { id: string; status: string; amountCents: number; card: string; note: string };
+  assert.equal(letter.amountCents, 399);
+  assert.equal(letter.card, "thank-you");
+  assert.ok(letter.note.includes("accepted for mailing"));
+
+  for (const [event, want] of [["paid", "paid"], ["sent", "sent"]] as const) {
+    const res = await handleInkSendRest(
+      new Request(`http://localhost/v1/ink-send/letters/${letter.id}/demo-event`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ event }),
+      }),
+      ["letters", letter.id, "demo-event"],
+      lookupKey(DEMO),
+    );
+    assert.equal(res.status, 200);
+    assert.equal(((await res.json()) as { status: string }).status, want);
+  }
+
+  const tools = await handleInkSendMcp(
+    new Request("http://localhost/mcp/ink-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    }),
+  );
+  const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
+  assert.deepEqual(names.sort(), ["create_letter", "get_letter", "list_letters"].sort());
+});
+
+test("domain-send check + registration lifecycle", async () => {
+  resetDomains();
+  const headers = { Authorization: `Bearer ${DEMO}`, "Content-Type": "application/json" };
+
+  const check = await handleDomainSendRest(
+    new Request("http://localhost/v1/domain-send/domains/check", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ domain: "studio-telep.com" }),
+    }),
+    ["domains", "check"],
+    lookupKey(DEMO),
+  );
+  assert.equal(check.status, 200);
+  const checkJson = (await check.json()) as { available: boolean; priceCents: number };
+  assert.equal(checkJson.available, true);
+  assert.equal(checkJson.priceCents, 1499);
+
+  const taken = await handleDomainSendRest(
+    new Request("http://localhost/v1/domain-send/domains/check", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ domain: "taken-example.com" }),
+    }),
+    ["domains", "check"],
+    lookupKey(DEMO),
+  );
+  assert.equal(((await taken.json()) as { available: boolean }).available, false);
+
+  const created = await handleDomainSendRest(
+    new Request("http://localhost/v1/domain-send/domains", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ domain: "Studio-Telep.com", years: 2 }),
+    }),
+    ["domains"],
+    lookupKey(DEMO),
+  );
+  assert.equal(created.status, 201);
+  const domain = (await created.json()) as { id: string; domain: string; amountCents: number; whoisPrivacy: boolean };
+  assert.equal(domain.domain, "studio-telep.com");
+  assert.equal(domain.amountCents, 2998);
+  assert.equal(domain.whoisPrivacy, true);
+
+  for (const [event, want] of [["paid", "paid"], ["active", "active"]] as const) {
+    const res = await handleDomainSendRest(
+      new Request(`http://localhost/v1/domain-send/domains/${domain.id}/demo-event`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ event }),
+      }),
+      ["domains", domain.id, "demo-event"],
+      lookupKey(DEMO),
+    );
+    assert.equal(res.status, 200);
+    assert.equal(((await res.json()) as { status: string }).status, want);
+  }
+
+  const tools = await handleDomainSendMcp(
+    new Request("http://localhost/mcp/domain-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    }),
+  );
+  const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
+  assert.deepEqual(names.sort(), ["check_domain", "register_domain", "get_domain", "list_domains"].sort());
 });

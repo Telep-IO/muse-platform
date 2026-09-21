@@ -1,0 +1,1 @@
+{"dependencies":{"@telep/platform":"*","@telep/registry":"*"},"exports":{".":"./src/index.ts"},"name":"@telep/call-send","private":true,"type":"module","version":"0.1.0"}
