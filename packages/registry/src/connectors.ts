@@ -16,8 +16,8 @@ export const connectors: Connector[] = [
     docsPath: "/docs#paper-send",
     apiBasePath: "/v1/paper-send",
     mcpPath: "/mcp/paper-send",
-    privacyPath: "/privacy",
-    termsPath: "/terms",
+    privacyPath: "/connectors/paper-send/privacy",
+    termsPath: "/connectors/paper-send/terms",
     howMuseUsesIt:
       "Muse drafts a letter from a PDF and addresses, then hands you a private review link. You check the rendered pages, confirm, and pay. The agent never skips review or holds a print-provider key.",
     examplePrompts: [
@@ -40,8 +40,8 @@ export const connectors: Connector[] = [
     docsPath: "/docs#sumvid",
     apiBasePath: "/v1/sumvid",
     mcpPath: "/mcp/sumvid",
-    privacyPath: "/privacy",
-    termsPath: "/terms",
+    privacyPath: "/connectors/sumvid/privacy",
+    termsPath: "/connectors/sumvid/terms",
     howMuseUsesIt:
       "When you ask Muse to catch you up on a video, it can call Sumvid for a concise summary instead of watching the whole thing in-session.",
     examplePrompts: [
@@ -63,8 +63,8 @@ export const connectors: Connector[] = [
     docsPath: "/docs#shipsignal",
     apiBasePath: "/v1/shipsignal",
     mcpPath: "/mcp/shipsignal",
-    privacyPath: "/privacy",
-    termsPath: "/terms",
+    privacyPath: "/connectors/shipsignal/privacy",
+    termsPath: "/connectors/shipsignal/terms",
     howMuseUsesIt:
       "Muse looks up a tracking number across carriers and reports where the package is, without you opening a carrier site.",
     examplePrompts: [
@@ -86,8 +86,8 @@ export const connectors: Connector[] = [
     docsPath: "/docs",
     apiBasePath: "/v1/sign-send",
     mcpPath: "/mcp/sign-send",
-    privacyPath: "/privacy",
-    termsPath: "/terms",
+    privacyPath: "/connectors/sign-send/privacy",
+    termsPath: "/connectors/sign-send/terms",
     howMuseUsesIt:
       "Muse prepares an envelope and signer list. You review the document and pay before any signature request goes out.",
     examplePrompts: [
@@ -108,8 +108,8 @@ export const connectors: Connector[] = [
     docsPath: "/docs",
     apiBasePath: "/v1/fax-send",
     mcpPath: "/mcp/fax-send",
-    privacyPath: "/privacy",
-    termsPath: "/terms",
+    privacyPath: "/connectors/fax-send/privacy",
+    termsPath: "/connectors/fax-send/terms",
     howMuseUsesIt:
       "Muse prepares the fax and destination number. You review the pages and pay before anything is transmitted.",
     examplePrompts: [
@@ -129,8 +129,8 @@ export const connectors: Connector[] = [
     docsPath: "/docs",
     apiBasePath: "/v1/call-send",
     mcpPath: "/mcp/call-send",
-    privacyPath: "/privacy",
-    termsPath: "/terms",
+    privacyPath: "/connectors/call-send/privacy",
+    termsPath: "/connectors/call-send/terms",
     howMuseUsesIt:
       "Muse drafts a short script. You read it, edit if needed, and pay before the call is placed.",
     examplePrompts: [
@@ -150,8 +150,8 @@ export const connectors: Connector[] = [
     docsPath: "/docs",
     apiBasePath: "/v1/ink-send",
     mcpPath: "/mcp/ink-send",
-    privacyPath: "/privacy",
-    termsPath: "/terms",
+    privacyPath: "/connectors/ink-send/privacy",
+    termsPath: "/connectors/ink-send/terms",
     howMuseUsesIt:
       "Muse drafts the note. You approve the handwriting preview and address, then pay, before the robot writes and mails it.",
     examplePrompts: [
@@ -171,8 +171,8 @@ export const connectors: Connector[] = [
     docsPath: "/docs",
     apiBasePath: "/v1/domain-send",
     mcpPath: "/mcp/domain-send",
-    privacyPath: "/privacy",
-    termsPath: "/terms",
+    privacyPath: "/connectors/domain-send/privacy",
+    termsPath: "/connectors/domain-send/terms",
     howMuseUsesIt:
       "Muse checks availability and prepares a registration. You confirm the name, contacts, and price before anything is purchased.",
     examplePrompts: [
