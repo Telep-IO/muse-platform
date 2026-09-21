@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DomainSend</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>DomainSend</h1>
+  <p class="tagline">Check a domain, review it, pay once — the agent handles the rest.</p>
+
+  <section id="check-section">
+    <h2>1. Check availability</h2>
+    <form id="check-form">
+      <label>Domain name
+        <input id="check-domain" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="example.com" required>
+      </label>
+      <button type="submit">Check</button>
+    </form>
+    <div id="check-result" class="result" hidden></div>
+  </section>
+
+  <section id="draft-section" hidden>
+    <h2>2. Draft the registration</h2>
+    <form id="draft-form">
+      <label>Domain <input id="draft-domain" type="text" readonly></label>
+      <label>Term
+        <select id="draft-years">
+          <option value="1">1 year</option>
+          <option value="2">2 years</option>
+        </select>
+      </label>
+      <label>Registrant name <input id="draft-name" type="text" required maxlength="120"></label>
+      <label>Registrant email <input id="draft-email" type="email" required maxlength="160"></label>
+      <label>Organization (optional) <input id="draft-org" type="text" maxlength="120"></label>
+      <p class="hint">The registry sends a verification email to this address. It must be an inbox you control — click the link or the domain may be suspended.</p>
+      <button type="submit">Create draft</button>
+    </form>
+  </section>
+
+  <section id="review-section" hidden>
+    <h2>3. Review and pay</h2>
+    <dl id="review-details"></dl>
+    <p class="hint">WHOIS privacy is included free. The verification email goes to the registrant address above — make sure you can receive it.</p>
+    <form id="pay-form">
+      <label class="confirm"><input id="confirm-box" type="checkbox" required> <span id="confirmation-text"></span></label>
+      <button type="submit">Pay and register</button>
+    </form>
+    <div id="pay-error" class="error" hidden></div>
+  </section>
+
+  <section id="status-section" hidden>
+    <h2>Registration status</h2>
+    <dl id="status-details"></dl>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
