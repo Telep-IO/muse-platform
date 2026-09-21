@@ -8,7 +8,14 @@ import { handleFaxSendMcp, handleFaxSendRest, resetFaxes } from "@telep/fax-send
 import { handleCallSendMcp, handleCallSendRest, resetCalls } from "@telep/call-send";
 import { handleInkSendMcp, handleInkSendRest, resetLetters } from "@telep/ink-send";
 import { handleDomainSendMcp, handleDomainSendRest, resetDomains } from "@telep/domain-send";
-import { healthPayload, v1Index } from "../lib/gateway";
+import { handleSumvidMcp, handleSumvidRest, resetSummaries, STUB_NOTE as SUMVID_STUB } from "@telep/sumvid";
+import {
+  handleShipSignalMcp,
+  handleShipSignalRest,
+  resetParcels,
+  STUB_NOTE as SHIP_STUB,
+} from "@telep/shipsignal";
+import { dispatchMcp, dispatchRest, healthPayload, platformOpenApi, v1Index } from "../lib/gateway";
 
 const DEMO = "muse_sk_demo_localdev";
 
@@ -25,6 +32,8 @@ after(() => {
   resetCalls();
   resetLetters();
   resetDomains();
+  resetSummaries();
+  resetParcels();
 });
 
 test("registry loads paper-send as submitted", () => {
@@ -51,11 +60,43 @@ test("health payload", () => {
   assert.equal(health.connectors, listConnectors().length);
 });
 
-test("v1 index lists paper-send", () => {
+test("v1 index lists implemented gateway modules", () => {
   const index = v1Index();
-  const paper = index.connectors.find((c) => c.slug === "paper-send");
-  assert.ok(paper);
-  assert.equal(paper?.gatewayImplemented, true);
+  const implemented = [
+    "paper-send",
+    "sumvid",
+    "shipsignal",
+    "sign-send",
+    "fax-send",
+    "call-send",
+    "ink-send",
+    "domain-send",
+  ];
+  for (const slug of implemented) {
+    const connector = index.connectors.find((c) => c.slug === slug);
+    assert.ok(connector, slug);
+    assert.equal(connector?.gatewayImplemented, true, slug);
+  }
+  const sumvid = index.connectors.find((c) => c.slug === "sumvid");
+  assert.equal(sumvid?.status, "ready");
+  assert.equal(sumvid?.apiBasePath, "/v1/sumvid");
+  assert.equal(sumvid?.mcpPath, "/mcp/sumvid");
+  const shipsignal = index.connectors.find((c) => c.slug === "shipsignal");
+  assert.equal(shipsignal?.status, "ready");
+  assert.equal(shipsignal?.apiBasePath, "/v1/shipsignal");
+  assert.equal(shipsignal?.mcpPath, "/mcp/shipsignal");
+});
+
+test("merged OpenAPI includes sumvid, shipsignal, and *-send paths", () => {
+  const spec = platformOpenApi();
+  assert.ok(spec.paths["/v1/sumvid/summaries"]);
+  assert.ok(spec.paths["/v1/shipsignal/parcels"]);
+  assert.ok(spec.paths["/v1/paper-send/jobs"]);
+  assert.ok(spec.paths["/v1/sign-send/envelopes"]);
+  assert.ok(spec.paths["/v1/fax-send/faxes"]);
+  assert.ok(spec.paths["/v1/call-send/calls"]);
+  assert.ok(spec.paths["/v1/ink-send/letters"]);
+  assert.ok(spec.paths["/v1/domain-send/domains"]);
 });
 
 test("API key format and lookup", () => {
@@ -563,3 +604,323 @@ test("domain-send check + registration lifecycle", async () => {
   const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
   assert.deepEqual(names.sort(), ["check_domain", "register_domain", "get_domain", "list_domains"].sort());
 });
+
+const authHeaders = {
+  Authorization: `Bearer ${DEMO}`,
+  "Content-Type": "application/json",
+};
+
+test("sumvid authenticated create / get / list / account", async () => {
+  resetSummaries();
+  const created = await handleSumvidRest(
+    new Request("http://localhost/v1/sumvid/summaries", {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({ youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }),
+    }),
+    ["summaries"],
+    lookupKey(DEMO),
+  );
+  assert.equal(created.status, 201);
+  const summary = (await created.json()) as {
+    id: string;
+    status: string;
+    videoId: string;
+    note: string;
+    fulfillment: string;
+  };
+  assert.equal(summary.status, "stubbed");
+  assert.equal(summary.videoId, "dQw4w9WgXcQ");
+  assert.equal(summary.fulfillment, "stub");
+  assert.equal(summary.note, SUMVID_STUB);
+  assert.ok(summary.id.startsWith("sv_"));
+
+  const unauth = await handleSumvidRest(
+    new Request("http://localhost/v1/sumvid/summaries", { method: "POST", body: "{}" }),
+    ["summaries"],
+    null,
+  );
+  assert.equal(unauth.status, 401);
+
+  const badUrl = await handleSumvidRest(
+    new Request("http://localhost/v1/sumvid/summaries", {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({ youtubeUrl: "https://example.com/watch?v=nope" }),
+    }),
+    ["summaries"],
+    lookupKey(DEMO),
+  );
+  assert.equal(badUrl.status, 400);
+
+  const got = await handleSumvidRest(
+    new Request(`http://localhost/v1/sumvid/summaries/${summary.id}`),
+    ["summaries", summary.id],
+    lookupKey(DEMO),
+  );
+  assert.equal(got.status, 200);
+
+  const listed = await handleSumvidRest(
+    new Request("http://localhost/v1/sumvid/summaries"),
+    ["summaries"],
+    lookupKey(DEMO),
+  );
+  const listJson = (await listed.json()) as { summaries: unknown[] };
+  assert.equal(listJson.summaries.length, 1);
+
+  const account = await handleSumvidRest(
+    new Request("http://localhost/v1/sumvid/account"),
+    ["account"],
+    lookupKey(DEMO),
+  );
+  const accountJson = (await account.json()) as { summariesCreated: number; plan: string };
+  assert.equal(accountJson.summariesCreated, 1);
+  assert.equal(accountJson.plan, "stub");
+});
+
+test("sumvid MCP initialize, tools/list, and tools/call", async () => {
+  resetSummaries();
+  const initialized = await handleSumvidMcp(
+    new Request("http://localhost/mcp/sumvid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 0, method: "initialize", params: {} }),
+    }),
+  );
+  const initJson = (await initialized.json()) as { result: { serverInfo: { name: string } } };
+  assert.equal(initJson.result.serverInfo.name, "sumvid");
+
+  const listed = await handleSumvidMcp(
+    new Request("http://localhost/mcp/sumvid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    }),
+  );
+  const listJson = (await listed.json()) as { result: { tools: { name: string }[] } };
+  const names = listJson.result.tools.map((t) => t.name).sort();
+  assert.deepEqual(names, ["get_account", "get_summary", "summarize_youtube"]);
+
+  const called = await handleSumvidMcp(
+    new Request("http://localhost/mcp/sumvid", {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "summarize_youtube",
+          arguments: { youtubeUrl: "https://youtu.be/dQw4w9WgXcQ" },
+        },
+      }),
+    }),
+  );
+  assert.equal(called.status, 200);
+  const callJson = (await called.json()) as { result: { content: { text: string }[] } };
+  assert.ok(callJson.result.content[0].text.includes("sv_"));
+  assert.ok(callJson.result.content[0].text.includes("Gateway stub"));
+});
+
+test("shipsignal authenticated track / list / refresh / watch", async () => {
+  resetParcels();
+  const created = await handleShipSignalRest(
+    new Request("http://localhost/v1/shipsignal/parcels", {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({ trackingNumber: "1Z999AA10123456784" }),
+    }),
+    ["parcels"],
+    lookupKey(DEMO),
+  );
+  assert.equal(created.status, 201);
+  const parcel = (await created.json()) as {
+    id: string;
+    status: string;
+    carrierGuess: string;
+    watching: boolean;
+    note: string;
+    events: unknown[];
+  };
+  assert.equal(parcel.status, "stubbed");
+  assert.equal(parcel.carrierGuess, "ups");
+  assert.equal(parcel.watching, false);
+  assert.equal(parcel.note, SHIP_STUB);
+  assert.ok(parcel.id.startsWith("ss_"));
+  assert.ok(parcel.events.length >= 1);
+
+  const unauth = await handleShipSignalRest(
+    new Request("http://localhost/v1/shipsignal/parcels", { method: "POST", body: "{}" }),
+    ["parcels"],
+    null,
+  );
+  assert.equal(unauth.status, 401);
+
+  const listed = await handleShipSignalRest(
+    new Request("http://localhost/v1/shipsignal/parcels"),
+    ["parcels"],
+    lookupKey(DEMO),
+  );
+  const listJson = (await listed.json()) as { parcels: unknown[] };
+  assert.equal(listJson.parcels.length, 1);
+
+  const watched = await handleShipSignalRest(
+    new Request(`http://localhost/v1/shipsignal/parcels/${parcel.id}/watch`, { method: "POST" }),
+    ["parcels", parcel.id, "watch"],
+    lookupKey(DEMO),
+  );
+  const watchedJson = (await watched.json()) as { watching: boolean };
+  assert.equal(watched.status, 200);
+  assert.equal(watchedJson.watching, true);
+
+  const refreshed = await handleShipSignalRest(
+    new Request(`http://localhost/v1/shipsignal/parcels/${parcel.id}/refresh`, { method: "POST" }),
+    ["parcels", parcel.id, "refresh"],
+    lookupKey(DEMO),
+  );
+  assert.equal(refreshed.status, 200);
+
+  const unwatched = await handleShipSignalRest(
+    new Request(`http://localhost/v1/shipsignal/parcels/${parcel.id}/unwatch`, { method: "POST" }),
+    ["parcels", parcel.id, "unwatch"],
+    lookupKey(DEMO),
+  );
+  const unwatchedJson = (await unwatched.json()) as { watching: boolean };
+  assert.equal(unwatchedJson.watching, false);
+
+  const account = await handleShipSignalRest(
+    new Request("http://localhost/v1/shipsignal/account"),
+    ["account"],
+    lookupKey(DEMO),
+  );
+  const accountJson = (await account.json()) as { parcelsTracked: number; plan: string };
+  assert.equal(accountJson.parcelsTracked, 1);
+  assert.equal(accountJson.plan, "stub");
+});
+
+test("shipsignal MCP initialize, tools/list, and tools/call", async () => {
+  resetParcels();
+  const initialized = await handleShipSignalMcp(
+    new Request("http://localhost/mcp/shipsignal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 0, method: "initialize", params: {} }),
+    }),
+  );
+  const initJson = (await initialized.json()) as { result: { serverInfo: { name: string } } };
+  assert.equal(initJson.result.serverInfo.name, "shipsignal");
+
+  const listed = await handleShipSignalMcp(
+    new Request("http://localhost/mcp/shipsignal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    }),
+  );
+  const listJson = (await listed.json()) as { result: { tools: { name: string }[] } };
+  const names = listJson.result.tools.map((t) => t.name).sort();
+  assert.deepEqual(names, [
+    "get_account",
+    "list_parcels",
+    "refresh_parcel",
+    "track_package",
+    "unwatch_parcel",
+    "watch_parcel",
+  ]);
+
+  const called = await handleShipSignalMcp(
+    new Request("http://localhost/mcp/shipsignal", {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "track_package",
+          arguments: { trackingNumber: "9400111899223344556677" },
+        },
+      }),
+    }),
+  );
+  assert.equal(called.status, 200);
+  const callJson = (await called.json()) as { result: { content: { text: string }[] } };
+  assert.ok(callJson.result.content[0].text.includes("ss_"));
+  assert.ok(callJson.result.content[0].text.includes("Gateway stub"));
+});
+
+test("dispatchRest and dispatchMcp wire sumvid, shipsignal, and *-send", async () => {
+  resetSummaries();
+  resetParcels();
+
+  const sumvidInit = await dispatchMcp(
+    new Request("http://localhost/mcp/sumvid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize" }),
+    }),
+    "sumvid",
+  );
+  assert.equal(sumvidInit.status, 200);
+
+  const shipInit = await dispatchMcp(
+    new Request("http://localhost/mcp/shipsignal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize" }),
+    }),
+    "shipsignal",
+  );
+  assert.equal(shipInit.status, 200);
+
+  const signInit = await dispatchMcp(
+    new Request("http://localhost/mcp/sign-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize" }),
+    }),
+    "sign-send",
+  );
+  assert.equal(signInit.status, 200);
+
+  const created = await dispatchRest(
+    new Request("http://localhost/v1/sumvid/summaries", {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({ youtubeUrl: "dQw4w9WgXcQ" }),
+    }),
+    "sumvid",
+    ["summaries"],
+  );
+  assert.equal(created.status, 201);
+
+  const missing = await dispatchRest(
+    new Request("http://localhost/v1/shipsignal/parcels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trackingNumber: "1Z999AA10123456784" }),
+    }),
+    "shipsignal",
+    ["parcels"],
+  );
+  assert.equal(missing.status, 401);
+
+  const tracked = await dispatchRest(
+    new Request("http://localhost/v1/shipsignal/parcels", {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({ trackingNumber: "1Z999AA10123456784" }),
+    }),
+    "shipsignal",
+    ["parcels"],
+  );
+  assert.equal(tracked.status, 201);
+
+  const unknown = await dispatchRest(
+    new Request("http://localhost/v1/not-a-connector", { method: "GET" }),
+    "not-a-connector",
+    [],
+  );
+  assert.equal(unknown.status, 404);
+});
+

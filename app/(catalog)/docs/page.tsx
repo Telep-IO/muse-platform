@@ -57,6 +57,35 @@ POST ${apiUrl("/mcp/{slug}")}`}</code>
       </p>
       <TryItForm />
 
+      <h2 id="sumvid">Sumvid stub</h2>
+      <p>
+        <code>POST /v1/sumvid/summaries</code> records an in-memory stub from a YouTube URL. It does
+        not fetch captions and does not call a paid summarizer. MCP tools:{" "}
+        <code>summarize_youtube</code>, <code>get_summary</code>, <code>get_account</code> at{" "}
+        <code>{apiUrl("/mcp/sumvid")}</code>.
+      </p>
+      <pre className="panel">
+        <code>{`curl -H "Authorization: Bearer muse_sk_demo_localdev" \\
+  -H "Content-Type: application/json" \\
+  -d '{"youtubeUrl":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"}' \\
+  ${apiUrl("/v1/sumvid/summaries")}`}</code>
+      </pre>
+
+      <h2 id="shipsignal">ShipSignal stub</h2>
+      <p>
+        <code>POST /v1/shipsignal/parcels</code> records an in-memory stub from a tracking number.
+        The timeline is hashed from that number; no UPS, USPS, FedEx, or DHL API is called. MCP
+        tools: <code>track_package</code>, <code>list_parcels</code>, <code>refresh_parcel</code>,{" "}
+        <code>watch_parcel</code>, <code>unwatch_parcel</code>, <code>get_account</code> at{" "}
+        <code>{apiUrl("/mcp/shipsignal")}</code>.
+      </p>
+      <pre className="panel">
+        <code>{`curl -H "Authorization: Bearer muse_sk_demo_localdev" \\
+  -H "Content-Type: application/json" \\
+  -d '{"trackingNumber":"1Z999AA10123456784"}' \\
+  ${apiUrl("/v1/shipsignal/parcels")}`}</code>
+      </pre>
+
       <h2>Add a connector module</h2>
       <ol>
         <li>

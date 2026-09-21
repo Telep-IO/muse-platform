@@ -18,7 +18,14 @@
       "@/*": ["./*"],
       "@telep/registry": ["./packages/registry/src/index.ts"],
       "@telep/platform": ["./packages/platform/src/index.ts"],
-      "@telep/paper-send": ["./connectors/paper-send/src/index.ts"]
+      "@telep/paper-send": ["./connectors/paper-send/src/index.ts"],
+      "@telep/sign-send": ["./connectors/sign-send/src/index.ts"],
+      "@telep/fax-send": ["./connectors/fax-send/src/index.ts"],
+      "@telep/call-send": ["./connectors/call-send/src/index.ts"],
+      "@telep/ink-send": ["./connectors/ink-send/src/index.ts"],
+      "@telep/domain-send": ["./connectors/domain-send/src/index.ts"],
+      "@telep/sumvid": ["./connectors/sumvid/src/index.ts"],
+      "@telep/shipsignal": ["./connectors/shipsignal/src/index.ts"]
     }
   },
   "include": [
