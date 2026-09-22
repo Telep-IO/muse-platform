@@ -17,6 +17,6 @@ Each directory was added with `git subtree add` from its standalone [Telep-IO](h
 
 CallSend, DomainSend, FaxSend, InkSend, and SignSend did not ship a Dockerfile. PaperSend is the furthest along: it includes a Dockerfile, compose files, and Lob/Stripe fulfillment wiring. Putting that tree in `services/paper-send` changes the code location only. Where PaperSend is deployed does not change.
 
-Install from the service directory (`npm install` or PaperSend's pnpm lockfile, then that app's own `start` script). Root `npm install` does not install these dependencies. `.env.example` files are empty placeholders; do not commit real keys.
+Install from the service directory (`npm install` or PaperSend's pnpm lockfile, then that app's own `start` script). Root `npm install` does not install these dependencies. `.env.example` files are empty placeholders for a **separate** Docker/Coolify/VPS deploy; do not commit real keys. They keep unprefixed names (`LOB_API_KEY`, `APP_MODE`, `TWILIO_ACCOUNT_SID`). The Vercel project uses the namespaced copies in the repo-root `.env.example`. See [docs/VERCEL-ENV.md](../docs/VERCEL-ENV.md).
 
 The agent-facing MCP and REST stubs stay in `connectors/{slug}` and keep `/mcp/{slug}` and `/v1/{slug}`. `connectors/paper-send` is the stub. `services/paper-send` is the Express app. Do not import this tree from the stub.

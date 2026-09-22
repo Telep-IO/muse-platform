@@ -75,14 +75,16 @@ npm run build
 | `STRIPE_SECRET_KEY` | Optional. Without it, Checkout helpers return a stub URL |
 | `STRIPE_WEBHOOK_SECRET` | Optional. Without it, `/v1/billing/webhook` acknowledges as a stub |
 
+Connector keys (PaperSend, Sumvid, ShipSignal, SignSend, FaxSend, CallSend, InkSend, DomainSend) use namespaced prefixes so one Vercel project can hold them. Full list, Production values, and the Express-name mapping: [docs/VERCEL-ENV.md](docs/VERCEL-ENV.md).
+
 No secrets belong in git. Demo key `muse_sk_demo_localdev` is for docs try-it and smoke tests only.
 
 ## Vercel
 
 1. Import `Telep-IO/muse-platform`.
 2. Framework: Next.js. Root directory: repository root.
-3. Set env vars for Production and Preview.
-4. Production `NEXT_PUBLIC_CATALOG_URL=https://muse.telep.io` and `NEXT_PUBLIC_API_URL=https://api.muse.telep.io`.
+3. Set env vars for Production and Preview from [docs/VERCEL-ENV.md](docs/VERCEL-ENV.md). Paste empty names, fill values in the dashboard, then **Redeploy**. Env edits do not apply to the current deployment.
+4. Production `NEXT_PUBLIC_CATALOG_URL=https://muse.telep.io` and `NEXT_PUBLIC_API_URL=https://api.muse.telep.io`. Keep every `*_APP_MODE` at `demo` until gateway wiring lands.
 5. Attach both domains to this project.
 
 ## Cloudflare DNS (Jonathan owns DNS)
