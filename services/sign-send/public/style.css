@@ -1,0 +1,53 @@
+:root { --ink: #1a1a1a; --muted: #666; --accent: #1d4ed8; --line: #e5e5e5; --bg: #fafafa; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, sans-serif; color: var(--ink); background: #fff; line-height: 1.5; }
+.header { display: flex; align-items: baseline; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--line); }
+.wordmark { font-size: 1.4rem; font-weight: 800; text-decoration: none; color: var(--ink); }
+.wordmark span { color: var(--accent); }
+.header-note { color: var(--muted); font-size: .9rem; }
+.mode-banner { background: #fef3c7; padding: .5rem 1.5rem; font-size: .85rem; }
+main { max-width: 1080px; margin: 0 auto; padding: 2rem 1.5rem; }
+.eyebrow { font-size: .75rem; letter-spacing: .12em; color: var(--muted); margin: 0; }
+h1 { font-size: 2.2rem; margin: .25rem 0 .5rem; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.workspace { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; margin-top: 2rem; }
+@media (max-width: 800px) { .workspace { grid-template-columns: 1fr; } }
+.steps { display: flex; gap: 1.5rem; list-style: none; padding: 0; margin: 0 0 1.5rem; }
+.steps li { color: var(--muted); font-size: .9rem; }
+.steps li[aria-current="step"] { color: var(--ink); font-weight: 700; }
+.steps span { display: inline-block; width: 1.6em; height: 1.6em; line-height: 1.6em; text-align: center; border: 1px solid var(--line); border-radius: 50%; margin-right: .4em; font-size: .8rem; }
+.notice { border: 1px solid var(--line); border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; background: var(--bg); }
+.notice.error { border-color: #dc2626; color: #991b1b; background: #fef2f2; }
+.upload { display: block; border: 2px dashed var(--line); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; margin: 1rem 0; }
+.upload:hover { border-color: var(--accent); }
+.file-symbol { display: inline-block; background: #fee2e2; color: #991b1b; font-weight: 800; padding: .25rem .6rem; border-radius: 6px; margin-right: .5rem; }
+.upload input { display: none; }
+.field { display: block; margin: .75rem 0; font-size: .9rem; }
+.field input { display: block; width: 100%; margin-top: .25rem; padding: .6rem; border: 1px solid var(--line); border-radius: 6px; font-size: 1rem; }
+.signer-row { border: 1px solid var(--line); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+button.primary, a.primary.button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: .8rem 1.4rem; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+button.primary:disabled { opacity: .5; cursor: not-allowed; }
+button.secondary { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .8rem 1.2rem; cursor: pointer; }
+button.text-button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: .9rem; padding: .25rem 0; }
+button.icon-button { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: .4rem .8rem; cursor: pointer; }
+button.icon-button:disabled { opacity: .4; }
+.actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+.confirmation { display: flex; gap: .6rem; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 1rem; margin: 1rem 0; font-size: .9rem; }
+.confirmation input { margin-top: .25rem; }
+.preview-toolbar { display: flex; justify-content: space-between; align-items: center; margin: 1rem 0 .5rem; }
+.sheet { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 1rem; text-align: center; }
+.sheet img { max-width: 100%; height: auto; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+.review-signers { border: 1px solid var(--line); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+.review-signers h3 { margin: .5rem 0 .1rem; font-size: 1rem; }
+.review-signers p { margin: 0 0 .5rem; color: var(--muted); }
+.receipt { border: 1px solid var(--line); border-radius: 12px; padding: 1.5rem; align-self: start; background: var(--bg); }
+.receipt-label { font-size: .75rem; letter-spacing: .12em; color: var(--muted); margin: 0; }
+.receipt h2 { font-size: 2.4rem; margin: .25rem 0; }
+.receipt dl { margin: 1rem 0; }
+.receipt dl div { display: flex; justify-content: space-between; padding: .3rem 0; font-size: .9rem; }
+.signer-status { list-style: none; padding: 0; }
+.signer-status li { border: 1px solid var(--line); border-radius: 8px; padding: .75rem 1rem; margin: .5rem 0; }
+footer { border-top: 1px solid var(--line); padding: 1.5rem; display: flex; justify-content: space-between; color: var(--muted); font-size: .9rem; max-width: 1080px; margin: 2rem auto 0; }
+footer nav { display: flex; gap: 1rem; }
+footer a { color: var(--muted); }
