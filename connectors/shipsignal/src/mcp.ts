@@ -1,18 +1,12 @@
-import { createMcpHandler, type McpTool } from "@telep/platform";
+import { createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, mcpNoArgTool, type McpTool } from "@telep/platform";
 import { listParcels, publicParcel, setWatching } from "./parcels";
 import { checkShip, refreshParcelResolved, shipAccount, trackParcel } from "./provider";
 
-const tools: McpTool[] = [
-  {
-    name: "check_credentials",
-    description:
-      "Validate the ShipSignal aggregator key. Does not register a tracking number. Demo mode skips the provider.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return checkShip();
-    },
-  },
+export const shipSignalTools: McpTool[] = [
+  mcpCheckTool(
+    "Validate the ShipSignal aggregator key. Does not register a tracking number. Demo mode skips the provider.",
+    () => checkShip(),
+  ),
   {
     name: "track_package",
     description:
@@ -28,88 +22,37 @@ const tools: McpTool[] = [
       },
     },
     async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
       return publicParcel(
         await trackParcel({
           trackingNumber: args.trackingNumber,
           origin: args.origin,
           destination: args.destination,
-          ownerKeyId: ctx.auth.keyId,
+          ownerKeyId: mcpAuth(ctx).keyId,
         }),
       );
     },
   },
-  {
-    name: "list_parcels",
-    description: "List ShipSignal stub parcels created with this API key.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return { parcels: listParcels(ctx.auth.keyId).map(publicParcel) };
+  mcpListTool("list_parcels", "List ShipSignal stub parcels created with this API key.", "parcels", (owner) =>
+    listParcels(owner).map(publicParcel),
+  ),
+  mcpGetTool(
+    "refresh_parcel",
+    "Refresh a parcel. Demo mode recomputes the hash timeline. test/live mode asks the configured provider again.",
+    "Parcel not found",
+    async (id, owner) => {
+      const parcel = await refreshParcelResolved(id, owner);
+      return parcel && publicParcel(parcel);
     },
-  },
-  {
-    name: "refresh_parcel",
-    description:
-      "Refresh a parcel. Demo mode recomputes the hash timeline. test/live mode asks the configured provider again.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
-    },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const parcel = await refreshParcelResolved(String(args.id), ctx.auth.keyId);
-      if (!parcel) throw new Error("Parcel not found");
-      return publicParcel(parcel);
-    },
-  },
-  {
-    name: "watch_parcel",
-    description: "Mark a stub parcel as watched. No carrier webhooks are registered.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
-    },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const parcel = setWatching(String(args.id), ctx.auth.keyId, true);
-      if (!parcel) throw new Error("Parcel not found");
-      return publicParcel(parcel);
-    },
-  },
-  {
-    name: "unwatch_parcel",
-    description: "Stop watching a stub parcel.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
-    },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const parcel = setWatching(String(args.id), ctx.auth.keyId, false);
-      if (!parcel) throw new Error("Parcel not found");
-      return publicParcel(parcel);
-    },
-  },
-  {
-    name: "get_account",
-    description: "Stub ShipSignal account for this API key. No real usage is billed.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return shipAccount(ctx.auth.keyId);
-    },
-  },
+  ),
+  mcpGetTool("watch_parcel", "Mark a stub parcel as watched. No carrier webhooks are registered.", "Parcel not found", (id, owner) => {
+    const parcel = setWatching(id, owner, true);
+    return parcel && publicParcel(parcel);
+  }),
+  mcpGetTool("unwatch_parcel", "Stop watching a stub parcel.", "Parcel not found", (id, owner) => {
+    const parcel = setWatching(id, owner, false);
+    return parcel && publicParcel(parcel);
+  }),
+  mcpNoArgTool("get_account", "Stub ShipSignal account for this API key. No real usage is billed.", (owner) => shipAccount(owner)),
 ];
 
-export const handleShipSignalMcp = createMcpHandler({
-  name: "shipsignal",
-  version: "0.1.0",
-  tools,
-});
+export const handleShipSignalMcp = createMcpHandler({ name: "shipsignal", version: "0.1.0", tools: shipSignalTools });

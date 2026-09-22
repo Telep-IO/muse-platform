@@ -57,6 +57,19 @@ export async function providerRequest(
   return { status: response.status, json, text: text.slice(0, 20000) };
 }
 
+export function modeFulfillment(
+  mode: AppMode,
+  ready: boolean,
+  notes: { demo: string; ready: string; missing: string },
+  liveName = "live",
+) {
+  return {
+    mode,
+    fulfillment: mode === "demo" ? "stub" : ready ? liveName : "missing_credentials",
+    note: mode === "demo" ? notes.demo : ready ? notes.ready : notes.missing,
+  };
+}
+
 export function assertProviderOk(response: { status: number }, provider: string): void {
   if (response.status === 401 || response.status === 403) {
     throw new HttpError(401, "invalid_credentials", `${provider} rejected the credentials`);

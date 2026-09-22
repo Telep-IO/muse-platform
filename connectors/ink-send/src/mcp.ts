@@ -1,4 +1,4 @@
-import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
+import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, type McpTool } from "@telep/platform";
 import { CARDS, createLetter, getLetter, listLetters, publicLetter } from "./letters";
 import { assertInkReady, checkInk, inkRuntime } from "./provider";
 
@@ -14,16 +14,8 @@ const addressSchema = {
   },
 };
 
-const tools: McpTool[] = [
-  {
-    name: "check_credentials",
-    description: "Validate the Handwrytten API key via getUser. Does not order a card. Demo mode skips the provider.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return checkInk();
-    },
-  },
+export const inkSendTools: McpTool[] = [
+  mcpCheckTool("Validate the Handwrytten API key via getUser. Does not order a card. Demo mode skips the provider.", () => checkInk()),
   {
     name: "create_letter",
     description:
@@ -40,7 +32,7 @@ const tools: McpTool[] = [
       },
     },
     async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
+      const auth = mcpAuth(ctx);
       const runtime = inkRuntime();
       if (runtime.mode !== "demo") assertInkReady();
       return publicLetter(
@@ -49,42 +41,18 @@ const tools: McpTool[] = [
           to: args.to,
           card: args.card,
           handwriting_style: args.handwriting_style,
-          ownerKeyId: ctx.auth.keyId,
+          ownerKeyId: auth.keyId,
           live: runtime.mode !== "demo",
           catalogOrigin: catalogOrigin(),
         }),
       );
     },
   },
-  {
-    name: "get_letter",
-    description: "Get an InkSend letter you created on this API key (status: draft, paid, sent).",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
-    },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const letter = getLetter(String(args.id), ctx.auth.keyId);
-      if (!letter) throw new Error("Letter not found");
-      return publicLetter(letter);
-    },
-  },
-  {
-    name: "list_letters",
-    description: "List InkSend letters created with this API key.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return { letters: listLetters(ctx.auth.keyId).map(publicLetter) };
-    },
-  },
+  mcpGetTool("get_letter", "Get an InkSend letter you created on this API key (status: draft, paid, sent).", "Letter not found", (id, owner) => {
+    const letter = getLetter(id, owner);
+    return letter && publicLetter(letter);
+  }),
+  mcpListTool("list_letters", "List InkSend letters created with this API key.", "letters", (owner) => listLetters(owner).map(publicLetter)),
 ];
 
-export const handleInkSendMcp = createMcpHandler({
-  name: "ink-send",
-  version: "0.1.0",
-  tools,
-});
+export const handleInkSendMcp = createMcpHandler({ name: "ink-send", version: "0.1.0", tools: inkSendTools });

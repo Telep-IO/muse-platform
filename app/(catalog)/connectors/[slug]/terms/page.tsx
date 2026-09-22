@@ -1,34 +1,15 @@
-import { notFound } from "next/navigation";
-import { getConnector, listConnectors } from "@telep/registry";
-import { LegalArticle } from "@/components/LegalBody";
-import { getConnectorLegal } from "@/lib/legal";
+import { getConnector } from "@telep/registry";
+import { ConnectorLegalPage, connectorLegalParams } from "@/components/ConnectorLegalPage";
 
 export function generateStaticParams() {
-  return listConnectors().map((connector) => ({ slug: connector.slug }));
+  return connectorLegalParams();
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const connector = getConnector(slug);
+  const connector = getConnector((await params).slug);
   return { title: connector ? `${connector.name} — Terms of Service` : "Terms of Service" };
 }
 
-export default async function ConnectorTermsPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const connector = getConnector(slug);
-  const legal = getConnectorLegal(slug);
-  if (!connector || !legal) notFound();
-
-  return (
-    <LegalArticle
-      kicker={`Telep IO · ${connector.name}`}
-      title="Terms of Service"
-      sections={legal.terms}
-      related={{ href: `/connectors/${connector.slug}`, label: connector.name }}
-    />
-  );
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  return ConnectorLegalPage({ params, kind: "terms" });
 }

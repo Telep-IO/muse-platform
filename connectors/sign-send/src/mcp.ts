@@ -1,26 +1,9 @@
-import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
+import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, type McpTool } from "@telep/platform";
 import { createEnvelope, getEnvelope, listEnvelopes, publicEnvelope } from "./envelopes";
 import { assertSignReady, checkSign, signRuntime } from "./provider";
 
-const signerSchema = {
-  type: "object",
-  required: ["name", "email"],
-  properties: {
-    name: { type: "string" },
-    email: { type: "string" },
-  },
-};
-
-const tools: McpTool[] = [
-  {
-    name: "check_credentials",
-    description: "Validate the e-sign API key. Does not send an envelope. Demo mode skips the provider.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return checkSign();
-    },
-  },
+export const signSendTools: McpTool[] = [
+  mcpCheckTool("Validate the e-sign API key. Does not send an envelope. Demo mode skips the provider.", () => checkSign()),
   {
     name: "create_envelope",
     description:
@@ -34,62 +17,42 @@ const tools: McpTool[] = [
           type: "array",
           minItems: 1,
           maxItems: 5,
-          items: signerSchema,
+          items: { type: "object", required: ["name", "email"], properties: { name: { type: "string" }, email: { type: "string" } } },
           description: "Signers in signing order",
         },
         document: {
           type: "object",
-          properties: {
-            filename: { type: "string" },
-            pages: { type: "integer", minimum: 1, maximum: 5 },
-          },
+          properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: 5 } },
         },
       },
     },
     async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
+      const auth = mcpAuth(ctx);
       const runtime = signRuntime();
       if (runtime.mode !== "demo") assertSignReady();
       return publicEnvelope(
         createEnvelope({
           document: args.document as { filename?: string; pages?: number } | undefined,
           signers: args.signers,
-          ownerKeyId: ctx.auth.keyId,
+          ownerKeyId: auth.keyId,
           catalogOrigin: catalogOrigin(),
           live: runtime.mode !== "demo",
         }),
       );
     },
   },
-  {
-    name: "get_envelope",
-    description: "Get a SignSend envelope you created on this API key (status: draft, paid, sent, signed, declined).",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
+  mcpGetTool(
+    "get_envelope",
+    "Get a SignSend envelope you created on this API key (status: draft, paid, sent, signed, declined).",
+    "Envelope not found",
+    (id, owner) => {
+      const envelope = getEnvelope(id, owner);
+      return envelope && publicEnvelope(envelope);
     },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const envelope = getEnvelope(String(args.id), ctx.auth.keyId);
-      if (!envelope) throw new Error("Envelope not found");
-      return publicEnvelope(envelope);
-    },
-  },
-  {
-    name: "list_envelopes",
-    description: "List SignSend envelopes created with this API key.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return { envelopes: listEnvelopes(ctx.auth.keyId).map(publicEnvelope) };
-    },
-  },
+  ),
+  mcpListTool("list_envelopes", "List SignSend envelopes created with this API key.", "envelopes", (owner) =>
+    listEnvelopes(owner).map(publicEnvelope),
+  ),
 ];
 
-export const handleSignSendMcp = createMcpHandler({
-  name: "sign-send",
-  version: "0.1.0",
-  tools,
-});
+export const handleSignSendMcp = createMcpHandler({ name: "sign-send", version: "0.1.0", tools: signSendTools });

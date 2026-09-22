@@ -1,12 +1,5 @@
-import { HttpError, assertProviderOk, basicAuthHeader, envValue, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
+import { HttpError, assertProviderOk, basicAuthHeader, envValue, modeFulfillment, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
 import { PRICE_CENTS } from "./envelopes";
-
-const LIVE_NOTE =
-  "Draft only. No signature request was sent. A human must review and pay before the e-sign provider is asked to send.";
-
-export function signLiveNote(): string {
-  return LIVE_NOTE;
-}
 
 export function signRuntime(env: Env = process.env) {
   const mode = readAppMode("SIGN_SEND_APP_MODE", env);
@@ -78,15 +71,9 @@ export async function checkSign(env: Env = process.env) {
 
 export function signDescriptor(env: Env = process.env) {
   const runtime = signRuntime(env);
-  const ready = runtime.mode !== "demo" && Boolean(runtime.apiKey);
-  return {
-    mode: runtime.mode,
-    fulfillment: runtime.mode === "demo" ? "stub" : ready ? "live" : "missing_credentials",
-    note:
-      runtime.mode === "demo"
-        ? "Create an envelope at POST /v1/sign-send/envelopes. E-signature provider fulfillment is not called in demo mode."
-        : ready
-          ? "POST /envelopes stores a draft and does not send it. GET /check validates the e-sign key."
-          : "SIGN_SEND_APP_MODE is test or live but SIGN_SEND_ESIGN_API_KEY is empty.",
-  };
+  return modeFulfillment(runtime.mode, runtime.mode !== "demo" && Boolean(runtime.apiKey), {
+    demo: "Create an envelope at POST /v1/sign-send/envelopes. E-signature provider fulfillment is not called in demo mode.",
+    ready: "POST /envelopes stores a draft and does not send it. GET /check validates the e-sign key.",
+    missing: "SIGN_SEND_APP_MODE is test or live but SIGN_SEND_ESIGN_API_KEY is empty.",
+  });
 }

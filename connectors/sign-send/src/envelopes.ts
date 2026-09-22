@@ -1,3 +1,5 @@
+import { applyEvent, memoryStore, withoutOwner } from "@telep/platform";
+
 export type SignerStatus = "pending" | "signed" | "declined";
 
 export type Signer = {
@@ -33,7 +35,7 @@ export const MAX_SIGNERS = 5;
 const STUB_NOTE =
   "Gateway stub: envelope is recorded in-memory only. E-signature provider fulfillment (DocuSign planned) is not wired on this gateway yet. Do not treat this as a sent signature request.";
 
-const envelopes = new Map<string, Envelope>();
+const envelopes = memoryStore<Envelope>();
 
 function requireSigner(value: unknown, index: number): Omit<Signer, "order" | "status"> {
   if (!value || typeof value !== "object") {
@@ -89,70 +91,30 @@ export function createEnvelope(input: {
       : STUB_NOTE,
     fulfillment: input.live ? "live" : "stub",
   };
-  envelopes.set(id, envelope);
-  return envelope;
+  return envelopes.save(envelope);
 }
 
-export function getEnvelope(id: string, ownerKeyId: string): Envelope | undefined {
-  const envelope = envelopes.get(id);
-  if (!envelope || envelope.ownerKeyId !== ownerKeyId) return undefined;
-  return envelope;
-}
+export const getEnvelope = envelopes.get;
+export const listEnvelopes = envelopes.list;
+export const resetEnvelopes = envelopes.reset;
+export const publicEnvelope = withoutOwner<Envelope>;
 
-export function listEnvelopes(ownerKeyId: string): Envelope[] {
-  return [...envelopes.values()]
-    .filter((e) => e.ownerKeyId === ownerKeyId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export function publicEnvelope(envelope: Envelope): Omit<Envelope, "ownerKeyId"> {
-  const { ownerKeyId: _omit, ...rest } = envelope;
-  return rest;
-}
-
-/**
- * Test/demo-only state transitions. Never wired to a real provider.
- * paid -> sent -> signed (per signer) | declined.
- */
-export function demoEvent(
-  id: string,
-  ownerKeyId: string,
-  event: string,
-  signerEmail?: string,
-): Envelope {
+export function demoEvent(id: string, ownerKeyId: string, event: string, signerEmail?: string): Envelope {
   const envelope = getEnvelope(id, ownerKeyId);
-  if (!envelope) throw new Error("Envelope not found");
-
-  if (event === "paid") {
-    if (envelope.status !== "draft") throw new Error(`cannot mark paid from status ${envelope.status}`);
-    envelope.status = "paid";
-    return envelope;
-  }
-  if (event === "sent") {
-    if (envelope.status !== "paid") throw new Error(`cannot send from status ${envelope.status}`);
-    envelope.status = "sent";
-    return envelope;
-  }
   if (event === "signed") {
-    if (envelope.status !== "sent") throw new Error(`cannot sign from status ${envelope.status}`);
+    const current = applyEvent(envelope, "Envelope not found", event, {
+      signed: { from: "sent", verb: "sign" },
+    });
     const email = (signerEmail ?? "").trim().toLowerCase();
-    const signer = envelope.signers.find((s) => s.email === email);
+    const signer = current.signers.find((item) => item.email === email);
     if (!signer) throw new Error(`unknown signer: ${signerEmail}`);
     signer.status = "signed";
-    if (envelope.signers.every((s) => s.status === "signed")) {
-      envelope.status = "signed";
-    }
-    return envelope;
+    if (current.signers.every((item) => item.status === "signed")) current.status = "signed";
+    return current;
   }
-  if (event === "declined") {
-    if (envelope.status !== "sent") throw new Error(`cannot decline from status ${envelope.status}`);
-    envelope.status = "declined";
-    return envelope;
-  }
-  throw new Error(`unknown demo event: ${event}`);
-}
-
-/** Test helper — not used by production routes. */
-export function resetEnvelopes(): void {
-  envelopes.clear();
+  return applyEvent(envelope, "Envelope not found", event, {
+    paid: { from: "draft", to: "paid", verb: "mark paid" },
+    sent: { from: "paid", to: "sent", verb: "send" },
+    declined: { from: "sent", to: "declined", verb: "decline" },
+  });
 }

@@ -1,17 +1,9 @@
-import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
+import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, type McpTool } from "@telep/platform";
 import { createFax, getFax, listFaxes, publicFax } from "./faxes";
 import { assertFaxReady, checkFax, faxRuntime } from "./provider";
 
-const tools: McpTool[] = [
-  {
-    name: "check_credentials",
-    description: "Validate fax provider credentials. Does not transmit a fax. Demo mode skips the provider.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return checkFax();
-    },
-  },
+export const faxSendTools: McpTool[] = [
+  mcpCheckTool("Validate fax provider credentials. Does not transmit a fax. Demo mode skips the provider.", () => checkFax()),
   {
     name: "create_fax",
     description:
@@ -21,10 +13,7 @@ const tools: McpTool[] = [
       additionalProperties: false,
       required: ["to", "document"],
       properties: {
-        to: {
-          type: "string",
-          description: "Destination phone number in E.164 format (e.g. +15550100)",
-        },
+        to: { type: "string", description: "Destination phone number in E.164 format (e.g. +15550100)" },
         document: {
           type: "object",
           properties: {
@@ -32,14 +21,11 @@ const tools: McpTool[] = [
             pages: { type: "integer", minimum: 1, maximum: 10 },
           },
         },
-        coverPage: {
-          type: "boolean",
-          description: "Include a reviewed cover page (counts as a billable page)",
-        },
+        coverPage: { type: "boolean", description: "Include a reviewed cover page (counts as a billable page)" },
       },
     },
     async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
+      const auth = mcpAuth(ctx);
       const runtime = faxRuntime();
       if (runtime.mode !== "demo") assertFaxReady();
       return publicFax(
@@ -47,42 +33,18 @@ const tools: McpTool[] = [
           to: args.to,
           document: args.document as { filename?: string; pages?: number } | undefined,
           coverPage: args.coverPage,
-          ownerKeyId: ctx.auth.keyId,
+          ownerKeyId: auth.keyId,
           catalogOrigin: catalogOrigin(),
           live: runtime.mode !== "demo",
         }),
       );
     },
   },
-  {
-    name: "get_fax",
-    description: "Get a FaxSend fax you created on this API key (status: draft, paid, sending, delivered, failed).",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
-    },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const fax = getFax(String(args.id), ctx.auth.keyId);
-      if (!fax) throw new Error("Fax not found");
-      return publicFax(fax);
-    },
-  },
-  {
-    name: "list_faxes",
-    description: "List FaxSend faxes created with this API key.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return { faxes: listFaxes(ctx.auth.keyId).map(publicFax) };
-    },
-  },
+  mcpGetTool("get_fax", "Get a FaxSend fax you created on this API key (status: draft, paid, sending, delivered, failed).", "Fax not found", (id, owner) => {
+    const fax = getFax(id, owner);
+    return fax && publicFax(fax);
+  }),
+  mcpListTool("list_faxes", "List FaxSend faxes created with this API key.", "faxes", (owner) => listFaxes(owner).map(publicFax)),
 ];
 
-export const handleFaxSendMcp = createMcpHandler({
-  name: "fax-send",
-  version: "0.1.0",
-  tools,
-});
+export const handleFaxSendMcp = createMcpHandler({ name: "fax-send", version: "0.1.0", tools: faxSendTools });

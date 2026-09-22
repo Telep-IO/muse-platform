@@ -1,12 +1,5 @@
-import { HttpError, assertProviderOk, basicAuthHeader, envValue, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
+import { HttpError, assertProviderOk, basicAuthHeader, envValue, modeFulfillment, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
 import { PRICE_CENTS } from "./calls";
-
-const LIVE_NOTE =
-  "Draft only. No call was placed. A human must review the verbatim script and pay before Twilio is asked to dial.";
-
-export function callLiveNote(): string {
-  return LIVE_NOTE;
-}
 
 export function callRuntime(env: Env = process.env) {
   const mode = readAppMode("CALL_SEND_APP_MODE", env);
@@ -78,15 +71,9 @@ export async function checkCall(env: Env = process.env) {
 
 export function callDescriptor(env: Env = process.env) {
   const runtime = callRuntime(env);
-  const ready = runtime.mode !== "demo" && Boolean(runtime.accountSid && runtime.authToken);
-  return {
-    mode: runtime.mode,
-    fulfillment: runtime.mode === "demo" ? "stub" : ready ? "live" : "missing_credentials",
-    note:
-      runtime.mode === "demo"
-        ? "Create a call at POST /v1/call-send/calls. Voice provider fulfillment is not called in demo mode."
-        : ready
-          ? "POST /calls stores a draft and does not dial. GET /check fetches the Twilio account."
-          : "CALL_SEND_APP_MODE is test or live but Twilio SID or auth token is empty.",
-  };
+  return modeFulfillment(runtime.mode, runtime.mode !== "demo" && Boolean(runtime.accountSid && runtime.authToken), {
+    demo: "Create a call at POST /v1/call-send/calls. Voice provider fulfillment is not called in demo mode.",
+    ready: "POST /calls stores a draft and does not dial. GET /check fetches the Twilio account.",
+    missing: "CALL_SEND_APP_MODE is test or live but Twilio SID or auth token is empty.",
+  });
 }

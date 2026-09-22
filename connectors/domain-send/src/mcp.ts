@@ -1,17 +1,12 @@
-import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
+import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, type McpTool } from "@telep/platform";
 import { createDomain, getDomain, listDomains, publicDomain } from "./domains";
 import { assertDomainReady, checkDomainCredentials, domainRuntime, resolveAvailability } from "./provider";
 
-const tools: McpTool[] = [
-  {
-    name: "check_credentials",
-    description: "Validate OpenSRS reseller credentials with a LOOKUP of example.com. Does not register a domain. Demo mode skips OpenSRS.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return checkDomainCredentials();
-    },
-  },
+export const domainSendTools: McpTool[] = [
+  mcpCheckTool(
+    "Validate OpenSRS reseller credentials with a LOOKUP of example.com. Does not register a domain. Demo mode skips OpenSRS.",
+    () => checkDomainCredentials(),
+  ),
   {
     name: "check_domain",
     description: "Check whether a domain is available and its price. Read-only. Demo mode is a local stub. test/live mode calls OpenSRS LOOKUP.",
@@ -19,12 +14,10 @@ const tools: McpTool[] = [
       type: "object",
       additionalProperties: false,
       required: ["domain"],
-      properties: {
-        domain: { type: "string", description: "Domain to check, e.g. example.com" },
-      },
+      properties: { domain: { type: "string", description: "Domain to check, e.g. example.com" } },
     },
     async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
+      mcpAuth(ctx);
       const domain = String(args.domain ?? "").trim().toLowerCase();
       return { domain, ...(await resolveAvailability(args.domain)) };
     },
@@ -43,7 +36,7 @@ const tools: McpTool[] = [
       },
     },
     async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
+      const auth = mcpAuth(ctx);
       const runtime = domainRuntime();
       if (runtime.mode !== "demo") assertDomainReady();
       return publicDomain(
@@ -51,41 +44,24 @@ const tools: McpTool[] = [
           domain: args.domain,
           years: args.years,
           live: runtime.mode !== "demo",
-          ownerKeyId: ctx.auth.keyId,
+          ownerKeyId: auth.keyId,
           catalogOrigin: catalogOrigin(),
         }),
       );
     },
   },
-  {
-    name: "get_domain",
-    description: "Get a DomainSend registration you created on this API key (status: draft, paid, active, failed).",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
+  mcpGetTool(
+    "get_domain",
+    "Get a DomainSend registration you created on this API key (status: draft, paid, active, failed).",
+    "Domain not found",
+    (id, owner) => {
+      const record = getDomain(id, owner);
+      return record && publicDomain(record);
     },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const record = getDomain(String(args.id), ctx.auth.keyId);
-      if (!record) throw new Error("Domain not found");
-      return publicDomain(record);
-    },
-  },
-  {
-    name: "list_domains",
-    description: "List DomainSend registrations created with this API key.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return { domains: listDomains(ctx.auth.keyId).map(publicDomain) };
-    },
-  },
+  ),
+  mcpListTool("list_domains", "List DomainSend registrations created with this API key.", "domains", (owner) =>
+    listDomains(owner).map(publicDomain),
+  ),
 ];
 
-export const handleDomainSendMcp = createMcpHandler({
-  name: "domain-send",
-  version: "0.1.0",
-  tools,
-});
+export const handleDomainSendMcp = createMcpHandler({ name: "domain-send", version: "0.1.0", tools: domainSendTools });

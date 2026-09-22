@@ -1,5 +1,3 @@
-export type JsonSchema = Record<string, unknown>;
-
 export type OpenApiDocument = {
   openapi: string;
   info: {
@@ -68,5 +66,140 @@ export function mergeOpenApi(base: OpenApiDocument, parts: OpenApiDocument[]): O
     paths,
     components,
     tags: uniqueTags,
+  };
+}
+
+const ok = { "200": { description: "OK" } };
+
+function bearer() {
+  return [{ bearerAuth: [] }];
+}
+
+function idParams() {
+  return [{ name: "id", in: "path" as const, required: true, schema: { type: "string" } }];
+}
+
+export function connectorSpec(info: { title: string; description: string; tag: string; tagDescription: string }, paths: OpenApiDocument["paths"]): OpenApiDocument {
+  const spec = emptySpec({
+    title: info.title,
+    version: "0.1.0",
+    description: info.description,
+    contact: { name: "Telep IO", email: "jon@telep.io", url: "https://telep.io" },
+  });
+  spec.tags = [{ name: info.tag, description: info.tagDescription }];
+  spec.paths = paths;
+  return spec;
+}
+
+export function descriptorPath(tag: string) {
+  return { get: { tags: [tag], summary: "Connector descriptor", responses: ok } };
+}
+
+export function openApiSelfPath(tag: string) {
+  return { get: { tags: [tag], summary: "This OpenAPI document", responses: ok } };
+}
+
+export function authedGet(tag: string, summary: string, parameters?: ReturnType<typeof idParams>) {
+  return {
+    get: {
+      tags: [tag],
+      summary,
+      security: bearer(),
+      ...(parameters ? { parameters } : {}),
+      responses: parameters
+        ? { "200": { description: "OK" }, "404": { description: "Not found" } }
+        : { "200": { description: "OK" }, "401": { description: "Missing key" } },
+    },
+  };
+}
+
+export function listAndCreate(
+  tag: string,
+  listSummary: string,
+  createSummary: string,
+  schema: Record<string, unknown>,
+  withInvalid = false,
+) {
+  const responses: Record<string, { description: string }> = { "201": { description: "Created" } };
+  if (withInvalid) responses["400"] = { description: "Invalid request" };
+  responses["401"] = { description: "Missing key" };
+  return {
+    get: {
+      tags: [tag],
+      summary: listSummary,
+      security: bearer(),
+      responses: { "200": { description: "OK" }, "401": { description: "Missing key" } },
+    },
+    post: {
+      tags: [tag],
+      summary: createSummary,
+      security: bearer(),
+      requestBody: { required: true, content: { "application/json": { schema } } },
+      responses,
+    },
+  };
+}
+
+export function checkoutPath(tag: string) {
+  return {
+    post: {
+      tags: [tag],
+      summary: "Create a checkout session (stub)",
+      security: bearer(),
+      parameters: idParams(),
+      responses: {
+        "200": { description: "OK" },
+        "404": { description: "Not found" },
+        "409": { description: "Not a draft" },
+      },
+    },
+  };
+}
+
+export function demoEventPath(tag: string, summary: string, events: string[], extra?: Record<string, unknown>) {
+  return {
+    post: {
+      tags: [tag],
+      summary,
+      security: bearer(),
+      parameters: idParams(),
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["event"],
+              properties: { event: { type: "string", enum: events }, ...extra },
+            },
+          },
+        },
+      },
+      responses: { "200": { description: "OK" }, "400": { description: "Invalid transition" } },
+    },
+  };
+}
+
+export function actionPost(tag: string, summary: string) {
+  return {
+    post: {
+      tags: [tag],
+      summary,
+      security: bearer(),
+      parameters: idParams(),
+      responses: { "200": { description: "OK" }, "404": { description: "Not found" } },
+    },
+  };
+}
+
+export function authedPost(tag: string, summary: string, schema: Record<string, unknown>, responses: Record<string, { description: string }>) {
+  return {
+    post: {
+      tags: [tag],
+      summary,
+      security: bearer(),
+      requestBody: { required: true, content: { "application/json": { schema } } },
+      responses,
+    },
   };
 }

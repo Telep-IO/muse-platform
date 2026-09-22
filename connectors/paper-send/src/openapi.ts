@@ -1,4 +1,4 @@
-import { emptySpec, type OpenApiDocument } from "@telep/platform";
+import { authedGet, connectorSpec, descriptorPath, listAndCreate } from "@telep/platform";
 
 const addressSchema = {
   type: "object",
@@ -14,68 +14,27 @@ const addressSchema = {
   },
 };
 
-export function paperSendOpenApi(): OpenApiDocument {
-  const spec = emptySpec({
-    title: "PaperSend",
-    version: "0.1.0",
-    description:
-      "PDF → physical mail stub on the Telep Muse gateway. Jobs are in-memory; mail-provider fulfillment comes later.",
-    contact: { name: "Telep IO", email: "jon@telep.io", url: "https://telep.io" },
-  });
-  spec.tags = [{ name: "paper-send", description: "Print and mail a PDF" }];
-  spec.paths = {
-    "/v1/paper-send": {
-      get: {
-        tags: ["paper-send"],
-        summary: "Connector descriptor",
-        responses: { "200": { description: "OK" } },
-      },
+export function paperSendOpenApi() {
+  const tag = "paper-send";
+  return connectorSpec(
+    {
+      title: "PaperSend",
+      description: "PDF → physical mail stub on the Telep Muse gateway. Jobs are in-memory; mail-provider fulfillment comes later.",
+      tag,
+      tagDescription: "Print and mail a PDF",
     },
-    "/v1/paper-send/jobs": {
-      get: {
-        tags: ["paper-send"],
-        summary: "List jobs",
-        security: [{ bearerAuth: [] }],
-        responses: { "200": { description: "OK" }, "401": { description: "Missing key" } },
-      },
-      post: {
-        tags: ["paper-send"],
-        summary: "Create a mail job (stub)",
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["sender", "recipient"],
-                properties: {
-                  sender: addressSchema,
-                  recipient: addressSchema,
-                  document: {
-                    type: "object",
-                    properties: {
-                      filename: { type: "string" },
-                      pages: { type: "integer", minimum: 1, maximum: 5 },
-                    },
-                  },
-                },
-              },
-            },
-          },
+    {
+      "/v1/paper-send": descriptorPath(tag),
+      "/v1/paper-send/jobs": listAndCreate(tag, "List jobs", "Create a mail job (stub)", {
+        type: "object",
+        required: ["sender", "recipient"],
+        properties: {
+          sender: addressSchema,
+          recipient: addressSchema,
+          document: { type: "object", properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: 5 } } },
         },
-        responses: { "201": { description: "Created" }, "401": { description: "Missing key" } },
-      },
+      }),
+      "/v1/paper-send/jobs/{id}": authedGet(tag, "Get a job", [{ name: "id", in: "path", required: true, schema: { type: "string" } }]),
     },
-    "/v1/paper-send/jobs/{id}": {
-      get: {
-        tags: ["paper-send"],
-        summary: "Get a job",
-        security: [{ bearerAuth: [] }],
-        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "OK" }, "404": { description: "Not found" } },
-      },
-    },
-  };
-  return spec;
+  );
 }

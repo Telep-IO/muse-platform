@@ -1,3 +1,5 @@
+import { memoryStore, withoutOwner } from "@telep/platform";
+
 export type Address = {
   name: string;
   address_line1: string;
@@ -29,7 +31,7 @@ export type Job = {
 const STUB_NOTE =
   "Gateway stub: job is recorded in-memory only. Full PDF rasterization and mail-provider fulfillment still live in the PaperSend app. Do not treat this as a mailed letter.";
 
-const jobs = new Map<string, Job>();
+const jobs = memoryStore<Job>();
 
 export function priceCents(pages: number): number {
   const n = Math.max(1, Math.min(5, Math.floor(pages) || 1));
@@ -92,28 +94,10 @@ export function createJob(input: {
       : STUB_NOTE,
     fulfillment: live ? "live" : "stub",
   };
-  jobs.set(id, job);
-  return job;
+  return jobs.save(job);
 }
 
-export function getJob(id: string, ownerKeyId: string): Job | undefined {
-  const job = jobs.get(id);
-  if (!job || job.ownerKeyId !== ownerKeyId) return undefined;
-  return job;
-}
-
-export function listJobs(ownerKeyId: string): Job[] {
-  return [...jobs.values()]
-    .filter((job) => job.ownerKeyId === ownerKeyId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export function publicJob(job: Job): Omit<Job, "ownerKeyId"> {
-  const { ownerKeyId: _omit, ...rest } = job;
-  return rest;
-}
-
-/** Test helper — not used by production routes. */
-export function resetJobs(): void {
-  jobs.clear();
-}
+export const getJob = jobs.get;
+export const listJobs = jobs.list;
+export const resetJobs = jobs.reset;
+export const publicJob = withoutOwner<Job>;

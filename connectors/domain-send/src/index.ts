@@ -1,6 +1,5 @@
 export { checkDomainCredentials, openSrsSignature, parseOpenSrsLookup, resolveAvailability } from "./provider";
 export { handleDomainSendRest } from "./rest";
-export { handleDomainSendMcp } from "./mcp";
+export { domainSendTools, handleDomainSendMcp } from "./mcp";
 export { domainSendOpenApi } from "./openapi";
-export { YEARLY_PRICE_CENTS, checkAvailability, createDomain, demoEvent, getDomain, listDomains, publicDomain, resetDomains } from "./domains";
-export type { AvailabilityResult, Domain, DomainStatus } from "./domains";
+export { resetDomains } from "./domains";

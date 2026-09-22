@@ -1,17 +1,9 @@
-import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
+import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, type McpTool } from "@telep/platform";
 import { MAX_SCRIPT_CHARS, createCall, getCall, listCalls, publicCall } from "./calls";
 import { assertCallReady, callRuntime, checkCall } from "./provider";
 
-const tools: McpTool[] = [
-  {
-    name: "check_credentials",
-    description: "Validate the Twilio account SID and auth token. Does not place a call. Demo mode skips Twilio.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return checkCall();
-    },
-  },
+export const callSendTools: McpTool[] = [
+  mcpCheckTool("Validate the Twilio account SID and auth token. Does not place a call. Demo mode skips Twilio.", () => checkCall()),
   {
     name: "create_call",
     description:
@@ -32,7 +24,7 @@ const tools: McpTool[] = [
       },
     },
     async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
+      const auth = mcpAuth(ctx);
       const runtime = callRuntime();
       if (runtime.mode !== "demo") assertCallReady();
       return publicCall(
@@ -41,42 +33,18 @@ const tools: McpTool[] = [
           script: String(args.script),
           voice: args.voice ? String(args.voice) : undefined,
           record: args.record === true,
-          ownerKeyId: ctx.auth.keyId,
+          ownerKeyId: auth.keyId,
           catalogOrigin: catalogOrigin(),
           live: runtime.mode !== "demo",
         }),
       );
     },
   },
-  {
-    name: "get_call",
-    description: "Get a CallSend call you created on this API key (status: draft, paid, queued, completed, failed).",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
-    },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const call = getCall(String(args.id), ctx.auth.keyId);
-      if (!call) throw new Error("Call not found");
-      return publicCall(call);
-    },
-  },
-  {
-    name: "list_calls",
-    description: "List CallSend calls created with this API key.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return { calls: listCalls(ctx.auth.keyId).map(publicCall) };
-    },
-  },
+  mcpGetTool("get_call", "Get a CallSend call you created on this API key (status: draft, paid, queued, completed, failed).", "Call not found", (id, owner) => {
+    const call = getCall(id, owner);
+    return call && publicCall(call);
+  }),
+  mcpListTool("list_calls", "List CallSend calls created with this API key.", "calls", (owner) => listCalls(owner).map(publicCall)),
 ];
 
-export const handleCallSendMcp = createMcpHandler({
-  name: "call-send",
-  version: "0.1.0",
-  tools,
-});
+export const handleCallSendMcp = createMcpHandler({ name: "call-send", version: "0.1.0", tools: callSendTools });

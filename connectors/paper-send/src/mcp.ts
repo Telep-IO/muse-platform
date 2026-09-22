@@ -1,18 +1,25 @@
-import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
+import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, type McpTool } from "@telep/platform";
 import { createJob, getJob, listJobs, publicJob } from "./jobs";
 import { assertPaperReady, checkPaper, paperRuntime } from "./provider";
 
-const tools: McpTool[] = [
-  {
-    name: "check_credentials",
-    description:
-      "Validate PaperSend Lob (and Stripe, if set) credentials. Read-only: lists Lob addresses and does not create a letter. Demo mode skips the provider.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return checkPaper();
-    },
+const addressSchema = {
+  type: "object",
+  required: ["name", "address_line1", "address_city", "address_state", "address_zip"],
+  properties: {
+    name: { type: "string" },
+    address_line1: { type: "string" },
+    address_line2: { type: "string" },
+    address_city: { type: "string" },
+    address_state: { type: "string" },
+    address_zip: { type: "string" },
   },
+};
+
+export const paperSendTools: McpTool[] = [
+  mcpCheckTool(
+    "Validate PaperSend Lob (and Stripe, if set) credentials. Read-only: lists Lob addresses and does not create a letter. Demo mode skips the provider.",
+    () => checkPaper(),
+  ),
   {
     name: "create_mail_job",
     description:
@@ -22,30 +29,8 @@ const tools: McpTool[] = [
       additionalProperties: false,
       required: ["sender", "recipient"],
       properties: {
-        sender: {
-          type: "object",
-          required: ["name", "address_line1", "address_city", "address_state", "address_zip"],
-          properties: {
-            name: { type: "string" },
-            address_line1: { type: "string" },
-            address_line2: { type: "string" },
-            address_city: { type: "string" },
-            address_state: { type: "string" },
-            address_zip: { type: "string" },
-          },
-        },
-        recipient: {
-          type: "object",
-          required: ["name", "address_line1", "address_city", "address_state", "address_zip"],
-          properties: {
-            name: { type: "string" },
-            address_line1: { type: "string" },
-            address_line2: { type: "string" },
-            address_city: { type: "string" },
-            address_state: { type: "string" },
-            address_zip: { type: "string" },
-          },
-        },
+        sender: addressSchema,
+        recipient: addressSchema,
         document: {
           type: "object",
           properties: {
@@ -56,7 +41,7 @@ const tools: McpTool[] = [
       },
     },
     async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
+      const auth = mcpAuth(ctx);
       const runtime = paperRuntime();
       if (runtime.mode !== "demo") assertPaperReady();
       return publicJob(
@@ -64,42 +49,22 @@ const tools: McpTool[] = [
           sender: args.sender,
           recipient: args.recipient,
           document: args.document as { filename?: string; pages?: number } | undefined,
-          ownerKeyId: ctx.auth.keyId,
+          ownerKeyId: auth.keyId,
           catalogOrigin: catalogOrigin(),
           live: runtime.mode !== "demo",
         }),
       );
     },
   },
-  {
-    name: "get_job",
-    description: "Get a PaperSend job you created on this API key.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id"],
-      properties: { id: { type: "string" } },
-    },
-    async handler(args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      const job = getJob(String(args.id), ctx.auth.keyId);
-      if (!job) throw new Error("Job not found");
-      return publicJob(job);
-    },
-  },
-  {
-    name: "list_jobs",
-    description: "List PaperSend jobs created with this API key.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-    async handler(_args, ctx) {
-      if (!ctx.auth) throw new Error("API key required");
-      return { jobs: listJobs(ctx.auth.keyId).map(publicJob) };
-    },
-  },
+  mcpGetTool("get_job", "Get a PaperSend job you created on this API key.", "Job not found", (id, owner) => {
+    const job = getJob(id, owner);
+    return job && publicJob(job);
+  }),
+  mcpListTool("list_jobs", "List PaperSend jobs created with this API key.", "jobs", (owner) => listJobs(owner).map(publicJob)),
 ];
 
 export const handlePaperSendMcp = createMcpHandler({
   name: "paper-send",
   version: "0.1.0",
-  tools,
+  tools: paperSendTools,
 });

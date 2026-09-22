@@ -1,3 +1,5 @@
+import { memoryStore, withoutOwner } from "@telep/platform";
+
 export type Summary = {
   id: string;
   status: "stubbed" | "ready";
@@ -19,7 +21,7 @@ export const STUB_NOTE =
 export const STUB_ACCOUNT_NOTE =
   "Gateway stub account. Sumvid on this edge does not bill usage or call a transcription provider.";
 
-const summaries = new Map<string, Summary>();
+const summaries = memoryStore<Summary>();
 
 const VIDEO_ID_RE = /^[\w-]{11}$/;
 
@@ -129,21 +131,11 @@ export function createSummary(input: {
     note: STUB_NOTE,
     fulfillment: "stub",
   };
-  summaries.set(id, summary);
-  return summary;
+  return summaries.save(summary);
 }
 
-export function getSummary(id: string, ownerKeyId: string): Summary | undefined {
-  const summary = summaries.get(id);
-  if (!summary || summary.ownerKeyId !== ownerKeyId) return undefined;
-  return summary;
-}
-
-export function listSummaries(ownerKeyId: string): Summary[] {
-  return [...summaries.values()]
-    .filter((summary) => summary.ownerKeyId === ownerKeyId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
+export const getSummary = summaries.get;
+export const listSummaries = summaries.list;
 
 export function getAccount(ownerKeyId: string) {
   return {
@@ -154,12 +146,5 @@ export function getAccount(ownerKeyId: string) {
   };
 }
 
-export function publicSummary(summary: Summary): Omit<Summary, "ownerKeyId"> {
-  const { ownerKeyId: _omit, ...rest } = summary;
-  return rest;
-}
-
-/** Test helper — not used by production routes. */
-export function resetSummaries(): void {
-  summaries.clear();
-}
+export const publicSummary = withoutOwner<Summary>;
+export const resetSummaries = summaries.reset;
