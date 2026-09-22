@@ -1,4 +1,4 @@
-import { defineConnector, postalAddress } from "@telep/platform";
+import { defineConnector, documentPages, postalAddress } from "@telep/platform";
 import { createJob, getJob, listJobs, publicJob } from "./jobs";
 import { assertPaperReady, checkPaper, paperDescriptor, paperRuntime, quotePaper } from "./provider";
 
@@ -31,7 +31,7 @@ const paper = defineConnector({
       properties: {
         sender: postalAddress({ line2: true, country: true }),
         recipient: postalAddress({ line2: true, country: true }),
-        document: { type: "object", properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: 5 } } },
+        document: documentPages(5),
       },
     },
     tool: {
@@ -45,7 +45,7 @@ const paper = defineConnector({
         properties: {
           sender: postalAddress({ line2: true }),
           recipient: postalAddress({ line2: true }),
-          document: { type: "object", properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: 5 } } },
+          document: documentPages(5),
         },
       },
     },

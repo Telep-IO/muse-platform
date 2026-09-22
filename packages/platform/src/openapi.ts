@@ -115,6 +115,43 @@ export function postalAddress(opts?: { line2?: boolean; country?: boolean }) {
   };
 }
 
+export function documentPages(max: number) {
+  return { type: "object" as const, properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: max } } };
+}
+
+export function parsePostalAddress(value: unknown, label: string, opts?: { line2?: boolean; country?: boolean; each?: boolean }) {
+  if (!value || typeof value !== "object") {
+    throw new Error(
+      opts?.each
+        ? `${label} must be an object with name, address_line1, address_city, address_state, address_zip`
+        : `${label} is required`,
+    );
+  }
+  const a = value as Record<string, unknown>;
+  const take = (key: string) => {
+    const text = String(a[key] ?? "").trim();
+    if (opts?.each && !text) throw new Error(`${label}.${key} is required`);
+    return text;
+  };
+  const name = take("name");
+  const address_line1 = take("address_line1");
+  const address_city = take("address_city");
+  const address_state = take("address_state");
+  const address_zip = take("address_zip");
+  if (!opts?.each && (!name || !address_line1 || !address_city || !address_state || !address_zip)) {
+    throw new Error(`${label} needs name, address_line1, address_city, address_state, address_zip`);
+  }
+  return {
+    name,
+    address_line1,
+    ...(opts?.line2 ? { address_line2: a.address_line2 ? String(a.address_line2) : "" } : {}),
+    address_city,
+    address_state,
+    address_zip,
+    ...(opts?.country ? { address_country: String(a.address_country ?? "US") } : {}),
+  };
+}
+
 export function authedGet(tag: string, summary: string, byId = false) {
   return {
     get: {

@@ -1,4 +1,4 @@
-import { memoryStore, withoutOwner } from "@telep/platform";
+import { memoryStore, parsePostalAddress, withoutOwner } from "@telep/platform";
 
 export type Address = {
   name: string;
@@ -38,30 +38,6 @@ export function priceCents(pages: number): number {
   return 499 + 25 * (n - 1);
 }
 
-function requireAddress(value: unknown, label: string): Address {
-  if (!value || typeof value !== "object") {
-    throw new Error(`${label} is required`);
-  }
-  const a = value as Record<string, unknown>;
-  const name = String(a.name ?? "").trim();
-  const address_line1 = String(a.address_line1 ?? "").trim();
-  const address_city = String(a.address_city ?? "").trim();
-  const address_state = String(a.address_state ?? "").trim();
-  const address_zip = String(a.address_zip ?? "").trim();
-  if (!name || !address_line1 || !address_city || !address_state || !address_zip) {
-    throw new Error(`${label} needs name, address_line1, address_city, address_state, address_zip`);
-  }
-  return {
-    name,
-    address_line1,
-    address_line2: a.address_line2 ? String(a.address_line2) : "",
-    address_city,
-    address_state,
-    address_zip,
-    address_country: String(a.address_country ?? "US"),
-  };
-}
-
 export function createJob(input: {
   sender: unknown;
   recipient: unknown;
@@ -70,8 +46,8 @@ export function createJob(input: {
   catalogOrigin: string;
   live?: boolean;
 }): Job {
-  const sender = requireAddress(input.sender, "sender");
-  const recipient = requireAddress(input.recipient, "recipient");
+  const sender = parsePostalAddress(input.sender, "sender", { line2: true, country: true });
+  const recipient = parsePostalAddress(input.recipient, "recipient", { line2: true, country: true });
   const pages = Math.max(1, Math.min(5, Number(input.document?.pages) || 1));
   const id = `ps_${crypto.randomUUID()}`;
   const live = input.live === true;

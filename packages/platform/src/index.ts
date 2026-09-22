@@ -4,7 +4,7 @@ export { errorResponse, HttpError, jsonError } from "./errors";
 export { rateLimit, rateLimitHeaders } from "./rate-limit";
 export { withCors } from "./cors";
 export { isApiHost, publicApiUrl } from "./hosts";
-export { emptySpec, mergeOpenApi, postalAddress } from "./openapi";
+export { documentPages, emptySpec, mergeOpenApi, parsePostalAddress, postalAddress } from "./openapi";
 export type { OpenApiDocument } from "./openapi";
 export { createCheckoutSession, handleWebhook } from "./stripe";
 export { mcpAuth } from "./mcp";

@@ -1,4 +1,4 @@
-import { defineConnector } from "@telep/platform";
+import { defineConnector, documentPages } from "@telep/platform";
 import { createFax, demoEvent, getFax, listFaxes, publicFax } from "./faxes";
 import { assertFaxReady, checkFax, faxDescriptor, faxRuntime, quoteFax } from "./provider";
 
@@ -7,7 +7,7 @@ const body = {
   required: ["to", "document"],
   properties: {
     to: { type: "string", description: "Destination phone number in E.164 format (e.g. +15550100)" },
-    document: { type: "object", properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: 10 } } },
+    document: documentPages(10),
     coverPage: { type: "boolean", description: "Include a reviewed cover page (counts as a billable page)" },
   },
 };

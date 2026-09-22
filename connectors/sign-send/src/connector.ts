@@ -1,4 +1,4 @@
-import { defineConnector } from "@telep/platform";
+import { defineConnector, documentPages } from "@telep/platform";
 import { createEnvelope, demoEvent, getEnvelope, listEnvelopes, publicEnvelope } from "./envelopes";
 import { assertSignReady, checkSign, quoteSign, signDescriptor, signRuntime } from "./provider";
 
@@ -13,7 +13,7 @@ const body = {
       items: { type: "object", required: ["name", "email"], properties: { name: { type: "string" }, email: { type: "string" } } },
       description: "Signers in signing order",
     },
-    document: { type: "object", properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: 5 } } },
+    document: documentPages(5),
   },
 };
 

@@ -1,4 +1,4 @@
-import { applyEvent, memoryStore, withoutOwner } from "@telep/platform";
+import { applyEvent, memoryStore, parsePostalAddress, withoutOwner } from "@telep/platform";
 
 export type LetterStatus = "draft" | "paid" | "sent";
 
@@ -37,25 +37,6 @@ const STUB_NOTE =
 
 const letters = memoryStore<Letter>();
 
-function requireAddress(value: unknown): LetterAddress {
-  if (!value || typeof value !== "object") {
-    throw new Error("to must be an object with name, address_line1, address_city, address_state, address_zip");
-  }
-  const t = value as Record<string, unknown>;
-  const field = (key: string) => {
-    const v = String(t[key] ?? "").trim();
-    if (!v) throw new Error(`to.${key} is required`);
-    return v;
-  };
-  return {
-    name: field("name"),
-    address_line1: field("address_line1"),
-    address_city: field("address_city"),
-    address_state: field("address_state"),
-    address_zip: field("address_zip"),
-  };
-}
-
 export function createLetter(input: {
   message: unknown;
   to: unknown;
@@ -70,7 +51,7 @@ export function createLetter(input: {
   if (message.length > MAX_MESSAGE_CHARS) {
     throw new Error(`message must be at most ${MAX_MESSAGE_CHARS} characters`);
   }
-  const to = requireAddress(input.to);
+  const to = parsePostalAddress(input.to, "to", { each: true });
   const card = input.card === undefined ? "plain" : String(input.card);
   if (!(CARDS as string[]).includes(card)) {
     throw new Error(`card must be one of: ${CARDS.join(", ")}`);
