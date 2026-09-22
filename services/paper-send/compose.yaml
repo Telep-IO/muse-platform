@@ -1,0 +1,23 @@
+services:
+  papersend:
+    build: .
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      DATA_DIR: /app/data
+    volumes:
+      - papersend-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+    cpus: 1.5
+    pids_limit: 96
+volumes:
+  papersend-data:

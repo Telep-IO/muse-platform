@@ -7,8 +7,8 @@ Copy this file per connector when filing with Meta’s [Muse Connector Platform]
 - **Name:** {PaperSend}
 - **Slug:** `{paper-send}`
 - **Operator:** Telep IO · jon@telep.io
-- **Repo:** {https://github.com/Telep-IO/paper-send}
-- **Fulfillment (the five *-send apps):** `services/{slug}` in this repository. PaperSend's live app stays `Telep-IO/paper-send`. Gateway MCP URLs below do not change.
+- **Repo:** {https://github.com/Telep-IO/muse-platform/tree/main/services/paper-send}
+- **Fulfillment:** `services/{slug}` in this repository, including PaperSend. That is a code location change only; deployment location is unchanged. Gateway MCP URLs below do not change.
 - **Catalog page:** https://muse.telep.io/connectors/{slug}
 - **Status (Telep):** planned | building | submitted | ready
 

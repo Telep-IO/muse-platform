@@ -1,0 +1,17 @@
+{
+    email {$ACME_EMAIL}
+    admin off
+}
+
+{$DOMAIN} {
+    request_body {
+        max_size 11MB
+    }
+    reverse_proxy papersend:3000 {
+        # Trust exactly this proxy, never client-supplied forwarded headers.
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+    # Access logging is intentionally disabled: private request data is not logged.
+}

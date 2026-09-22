@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Upload a PDF. We print, envelope, and mail your letter with USPS First Class postage. From $4.99, no subscription.">
+  <meta name="theme-color" content="#174b3d">
+  <title>PaperSend · Send a letter. Skip the post office.</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="header"><a class="wordmark" href="/" aria-label="PaperSend home">Paper<span>Send</span><span class="stamp" aria-hidden="true">P/S</span></a><span class="header-note">Real mail. Less effort.</span></header>
+  <div id="mode-banner" class="mode-banner" hidden></div>
+  <main>
+    <section class="intro"><p class="eyebrow">THE SMALL ERRAND, TAKEN CARE OF</p><h1>Send a letter.<br>Skip the post office.</h1><p>Upload your PDF. We’ll print it, envelope it, and mail it for you.</p></section>
+    <div class="workspace">
+      <section class="flow" aria-label="Send a letter">
+        <ol class="steps" aria-label="Progress"><li id="step-1" aria-current="step"><span>1</span> Document</li><li id="step-2"><span>2</span> Addresses</li><li id="step-3"><span>3</span> Review & pay</li></ol>
+        <div id="error" class="notice error" role="alert" tabindex="-1" hidden></div>
+        <div id="loading" class="notice" role="status" hidden>Preparing your print preview and checking addresses…</div>
+        <form id="letter-form">
+          <section id="document-step">
+            <h2>Your document</h2><p class="muted">A PDF is all you need. We’ll take care of the paper.</p>
+            <label class="upload" for="document"><span class="file-symbol" aria-hidden="true">PDF</span><strong id="file-title">Choose a PDF to mail</strong><span id="file-detail">1–5 pages · up to 10 MB</span><input id="document" name="document" type="file" accept="application/pdf,.pdf" required></label>
+            <p class="small muted">Printed in black and white on US Letter paper, single-sided. We fit your document inside safe print margins.</p>
+            <button id="to-addresses" type="button" class="primary">Continue to addresses <span aria-hidden="true">→</span></button>
+          </section>
+          <section id="addresses-step" hidden>
+            <h2>Where is it going?</h2><p class="muted">US addresses only. Include an apartment or suite if needed.</p>
+            <div class="addresses"><fieldset id="recipient-fields"><legend>Deliver to</legend></fieldset><fieldset id="sender-fields"><legend>Return address</legend></fieldset></div>
+            <p class="small muted">By preparing this letter, you confirm you are authorized to share its content and addresses. We send both addresses to Lob to check deliverability before payment. Read the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Notice</a>. In demo mode, no information is sent to Lob.</p>
+            <div class="actions"><button type="button" id="back-document" class="secondary">Back</button><button type="submit" id="prepare" class="primary">Prepare my letter <span aria-hidden="true">→</span></button></div>
+          </section>
+        </form>
+        <section id="review-step" hidden>
+          <h2>One last look.</h2><p class="muted">Check every page and both addresses before you pay.</p>
+          <div id="review-addresses" class="review-addresses"></div>
+          <div class="preview-toolbar"><strong id="page-label">Page 1</strong><div><button id="previous-page" class="icon-button" aria-label="Previous page">←</button><button id="next-page" class="icon-button" aria-label="Next page">→</button></div></div>
+          <div class="sheet"><img id="preview" alt="Print preview of your document"></div>
+          <button id="download" class="text-button">Download the print-ready PDF</button>
+          <p class="small muted">An extra address cover sheet is included at no extra charge. Your document is printed after it. This is ordinary First Class mail, without a signature or guaranteed delivery date.</p>
+          <label class="confirmation"><input id="confirmed" type="checkbox"><span><span id="confirmation-text"></span> <a id="review-terms" href="/terms.html" target="_blank" rel="noopener">Terms</a> · <a id="review-privacy" href="/privacy.html" target="_blank" rel="noopener">Privacy Notice</a></span></label>
+          <div class="actions"><button id="start-over" class="secondary">Start over</button><button id="pay" class="primary" disabled>Continue to payment</button></div>
+          <p class="small muted" id="payment-note">Secure payment with Stripe. We never receive your card details.</p>
+        </section>
+        <section id="status-step" hidden tabindex="-1">
+          <div class="status-mark" aria-hidden="true">✓</div><h2 id="status-title"></h2><p id="status-message" class="muted"></p>
+          <dl id="status-details" class="status-details"></dl>
+          <p class="small muted">Keep your private order link to check this order later. Anyone with the link can view it.</p>
+          <div class="actions"><button id="copy-link" class="secondary">Copy order link</button><a class="primary button" href="/">Send another letter</a></div>
+          <p id="copy-status" class="small" role="status"></p>
+        </section>
+      </section>
+      <aside class="receipt" aria-label="Price summary"><p class="receipt-label">YOUR LETTER, HANDLED</p><h2 id="price">$4.99</h2><p id="price-description">First page, everything included.</p><dl><div><dt>Black-and-white printing</dt><dd>Included</dd></div><div><dt>Address cover sheet</dt><dd>Included</dd></div><div><dt>Envelope & postage</dt><dd>Included</dd></div><div id="extra-line" hidden><dt>Additional pages</dt><dd id="extra-price"></dd></div></dl><p class="small muted">Additional pages are $0.25 each. No account or subscription required.<span id="tax-note" hidden> Applicable tax is calculated at checkout.</span></p><div class="postage"><span>USPS<br><strong>FIRST CLASS</strong></span><span class="postage-lines" aria-hidden="true">≈<br>≈<br>≈</span></div><p class="small muted">Printing and mailing are fulfilled by Lob. Delivery timing varies; this service is not for time-critical mail.</p></aside>
+    </div>
+    <section class="questions" aria-label="Common questions"><h2>A few good things to know.</h2><details><summary>What happens after I pay?</summary><p>We send your approved document and addresses to our printing partner, Lob. They print, envelope, and hand your letter to USPS. Your order page confirms when the printer accepts the order; that is not confirmation of delivery.</p></details><details><summary>Can I cancel or change my letter?</summary><p>Check everything before paying. Orders may enter production immediately, so edits and cancellations aren’t guaranteed. If the printer rejects your order before accepting it, we initiate a refund. If a provider response is uncertain, we review it before sending again.</p></details><details><summary>What happens to my document?</summary><p>Your document is available only through your private order link. Unpaid drafts expire after 48 hours. We remove completed order documents and addresses from our active storage after 30 days. Our payment and print providers have their own retention policies. Read our <a href="/privacy.html">privacy notice</a>.</p></details></section>
+  </main>
+  <footer><span>PaperSend</span><nav aria-label="Footer"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a id="support-link" hidden>Contact support</a></nav></footer>
+  <noscript><p class="notice error">Please enable JavaScript to prepare and review your letter.</p></noscript>
+</body>
+</html>
