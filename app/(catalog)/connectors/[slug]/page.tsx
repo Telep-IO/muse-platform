@@ -87,6 +87,12 @@ export default async function ConnectorPage({ params }: { params: Promise<{ slug
           <dd>
             <Link href={connector.termsPath}>{catalogUrl(connector.termsPath)}</Link>
           </dd>
+          <dt>Docs</dt>
+          <dd>
+            <Link href={`/connectors/${connector.slug}/docs`}>
+              {catalogUrl(`/connectors/${connector.slug}/docs`)}
+            </Link>
+          </dd>
         </dl>
       </section>
     </article>
