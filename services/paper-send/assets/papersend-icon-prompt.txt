@@ -1,0 +1,6 @@
+Concept generated with the built-in image_gen tool. Final logo redrawn as a flat SVG and exported with rsvg-convert at 512x512 pixels.
+
+Use case: logo-brand.
+Asset type: final app connector icon for PaperSend, a service that prints and mails letters.
+Create ONE polished, subtle, friendly logo icon, not a presentation or mockup. Square 1:1 PNG, ideally exactly 512 by 512 pixels.
+A single beautifully proportioned warm ivory envelope symbol centered on a solid muted deep pine green background. The envelope has softly rounded outer corners and a simple gracefully folded flap; the flap's gentle curve gives a faint feeling of a smile without being a face. A confident solid silhouette with precise, generous negative space, restrained and timeless. Friendly through shape and proportions, not cartoonish. Flat vector-style geometry, crisp edges. The envelope occupies approximately 60% of canvas width, plenty of clear space, excellent readability as a tiny 32px app icon. Background fills the entire square edge to edge. No text, no lettering, no eyes, no character, no shadows, no gradients, no texture, no 3D, no borders, no decorative sparkles, no tiny details, no mockup, no multiple options. Deliver only the final square icon.
