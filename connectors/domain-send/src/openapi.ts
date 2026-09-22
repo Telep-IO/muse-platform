@@ -1,7 +1,5 @@
 import { authedGet, authedPost, checkoutPath, connectorSpec, demoEventPath, descriptorPath, listAndCreate, openApiSelfPath } from "@telep/platform";
 
-const id = [{ name: "id", in: "path" as const, required: true, schema: { type: "string" } }];
-
 export function domainSendOpenApi() {
   const tag = "domain-send";
   return connectorSpec(
@@ -35,7 +33,7 @@ export function domainSendOpenApi() {
         },
         true,
       ),
-      "/v1/domain-send/domains/{id}": authedGet(tag, "Get a registration", id),
+      "/v1/domain-send/domains/{id}": authedGet(tag, "Get a registration", true),
       "/v1/domain-send/domains/{id}/checkout": checkoutPath(tag),
       "/v1/domain-send/domains/{id}/demo-event": demoEventPath(tag, "Demo-only state transition (paid, active, failed). Test only.", [
         "paid",

@@ -1,7 +1,5 @@
 import { authedGet, checkoutPath, connectorSpec, demoEventPath, descriptorPath, listAndCreate, openApiSelfPath } from "@telep/platform";
 
-const id = [{ name: "id", in: "path" as const, required: true, schema: { type: "string" } }];
-
 export function signSendOpenApi() {
   const tag = "sign-send";
   return connectorSpec(
@@ -35,7 +33,7 @@ export function signSendOpenApi() {
         },
         true,
       ),
-      "/v1/sign-send/envelopes/{id}": authedGet(tag, "Get an envelope", id),
+      "/v1/sign-send/envelopes/{id}": authedGet(tag, "Get an envelope", true),
       "/v1/sign-send/envelopes/{id}/checkout": checkoutPath(tag),
       "/v1/sign-send/envelopes/{id}/demo-event": demoEventPath(
         tag,

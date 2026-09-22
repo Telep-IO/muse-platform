@@ -1,7 +1,5 @@
 import { actionPost, authedGet, connectorSpec, descriptorPath, listAndCreate } from "@telep/platform";
 
-const id = [{ name: "id", in: "path" as const, required: true, schema: { type: "string" } }];
-
 export function shipSignalOpenApi() {
   const tag = "shipsignal";
   return connectorSpec(
@@ -20,7 +18,7 @@ export function shipSignalOpenApi() {
         required: ["trackingNumber"],
         properties: { trackingNumber: { type: "string" }, origin: { type: "string" }, destination: { type: "string" } },
       }),
-      "/v1/shipsignal/parcels/{id}": authedGet(tag, "Get a parcel", id),
+      "/v1/shipsignal/parcels/{id}": authedGet(tag, "Get a parcel", true),
       "/v1/shipsignal/parcels/{id}/refresh": actionPost(tag, "Refresh stub timeline"),
       "/v1/shipsignal/parcels/{id}/watch": actionPost(tag, "Watch a stub parcel"),
       "/v1/shipsignal/parcels/{id}/unwatch": actionPost(tag, "Unwatch a stub parcel"),

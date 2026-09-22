@@ -1,7 +1,5 @@
 import { authedGet, connectorSpec, descriptorPath, listAndCreate } from "@telep/platform";
 
-const id = [{ name: "id", in: "path" as const, required: true, schema: { type: "string" } }];
-
 export function sumvidOpenApi() {
   const tag = "sumvid";
   return connectorSpec(
@@ -20,7 +18,7 @@ export function sumvidOpenApi() {
         required: ["youtubeUrl"],
         properties: { youtubeUrl: { type: "string" }, language: { type: "string" } },
       }),
-      "/v1/sumvid/summaries/{id}": authedGet(tag, "Get a summary", id),
+      "/v1/sumvid/summaries/{id}": authedGet(tag, "Get a summary", true),
     },
   );
 }

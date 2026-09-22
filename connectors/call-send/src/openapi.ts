@@ -1,8 +1,6 @@
 import { authedGet, checkoutPath, connectorSpec, demoEventPath, descriptorPath, listAndCreate, openApiSelfPath } from "@telep/platform";
 import { MAX_SCRIPT_CHARS } from "./calls";
 
-const id = [{ name: "id", in: "path" as const, required: true, schema: { type: "string" } }];
-
 export function callSendOpenApi() {
   const tag = "call-send";
   return connectorSpec(
@@ -36,7 +34,7 @@ export function callSendOpenApi() {
         },
         true,
       ),
-      "/v1/call-send/calls/{id}": authedGet(tag, "Get a call", id),
+      "/v1/call-send/calls/{id}": authedGet(tag, "Get a call", true),
       "/v1/call-send/calls/{id}/checkout": checkoutPath(tag),
       "/v1/call-send/calls/{id}/demo-event": demoEventPath(
         tag,

@@ -1,7 +1,5 @@
 import { authedGet, checkoutPath, connectorSpec, demoEventPath, descriptorPath, listAndCreate, openApiSelfPath } from "@telep/platform";
 
-const id = [{ name: "id", in: "path" as const, required: true, schema: { type: "string" } }];
-
 export function faxSendOpenApi() {
   const tag = "fax-send";
   return connectorSpec(
@@ -30,7 +28,7 @@ export function faxSendOpenApi() {
         },
         true,
       ),
-      "/v1/fax-send/faxes/{id}": authedGet(tag, "Get a fax", id),
+      "/v1/fax-send/faxes/{id}": authedGet(tag, "Get a fax", true),
       "/v1/fax-send/faxes/{id}/checkout": checkoutPath(tag),
       "/v1/fax-send/faxes/{id}/demo-event": demoEventPath(tag, "Demo-only state transition (paid, sending, delivered, failed). Test only.", [
         "paid",

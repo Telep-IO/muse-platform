@@ -4,7 +4,7 @@ export { errorResponse, HttpError, jsonError } from "./errors";
 export { rateLimit, rateLimitHeaders } from "./rate-limit";
 export { withCors } from "./cors";
 export { catalogOrigin, isApiHost, publicApiUrl } from "./hosts";
-export { actionPost, authedGet, authedPost, checkoutPath, connectorSpec, demoEventPath, descriptorPath, emptySpec, listAndCreate, mergeOpenApi, openApiSelfPath } from "./openapi";
+export { actionPost, authedGet, authedPost, checkoutPath, connectorSpec, demoEventPath, descriptorPath, emptySpec, listAndCreate, mergeOpenApi, openApiSelfPath, postalAddress } from "./openapi";
 export type { OpenApiDocument } from "./openapi";
 export { createCheckoutSession, handleWebhook } from "./stripe";
 export { createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, mcpNoArgTool } from "./mcp";

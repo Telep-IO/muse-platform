@@ -99,14 +99,30 @@ export function openApiSelfPath(tag: string) {
   return { get: { tags: [tag], summary: "This OpenAPI document", responses: ok } };
 }
 
-export function authedGet(tag: string, summary: string, parameters?: ReturnType<typeof idParams>) {
+export function postalAddress(opts?: { line2?: boolean; country?: boolean }) {
+  return {
+    type: "object" as const,
+    required: ["name", "address_line1", "address_city", "address_state", "address_zip"],
+    properties: {
+      name: { type: "string" },
+      address_line1: { type: "string" },
+      ...(opts?.line2 ? { address_line2: { type: "string" } } : {}),
+      address_city: { type: "string" },
+      address_state: { type: "string" },
+      address_zip: { type: "string" },
+      ...(opts?.country ? { address_country: { type: "string", default: "US" } } : {}),
+    },
+  };
+}
+
+export function authedGet(tag: string, summary: string, byId = false) {
   return {
     get: {
       tags: [tag],
       summary,
       security: bearer(),
-      ...(parameters ? { parameters } : {}),
-      responses: parameters
+      ...(byId ? { parameters: idParams() } : {}),
+      responses: byId
         ? { "200": { description: "OK" }, "404": { description: "Not found" } }
         : { "200": { description: "OK" }, "401": { description: "Missing key" } },
     },

@@ -1,18 +1,4 @@
-import { authedGet, connectorSpec, descriptorPath, listAndCreate } from "@telep/platform";
-
-const addressSchema = {
-  type: "object",
-  required: ["name", "address_line1", "address_city", "address_state", "address_zip"],
-  properties: {
-    name: { type: "string" },
-    address_line1: { type: "string" },
-    address_line2: { type: "string" },
-    address_city: { type: "string" },
-    address_state: { type: "string" },
-    address_zip: { type: "string" },
-    address_country: { type: "string", default: "US" },
-  },
-};
+import { authedGet, connectorSpec, descriptorPath, listAndCreate, postalAddress } from "@telep/platform";
 
 export function paperSendOpenApi() {
   const tag = "paper-send";
@@ -29,12 +15,12 @@ export function paperSendOpenApi() {
         type: "object",
         required: ["sender", "recipient"],
         properties: {
-          sender: addressSchema,
-          recipient: addressSchema,
+          sender: postalAddress({ line2: true, country: true }),
+          recipient: postalAddress({ line2: true, country: true }),
           document: { type: "object", properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: 5 } } },
         },
       }),
-      "/v1/paper-send/jobs/{id}": authedGet(tag, "Get a job", [{ name: "id", in: "path", required: true, schema: { type: "string" } }]),
+      "/v1/paper-send/jobs/{id}": authedGet(tag, "Get a job", true),
     },
   );
 }
