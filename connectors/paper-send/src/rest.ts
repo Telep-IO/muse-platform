@@ -1,5 +1,6 @@
-import { catalogOrigin, jsonError, withCors, type AuthResult } from "@telep/platform";
+import { catalogOrigin, errorResponse, jsonError, withCors, type AuthResult } from "@telep/platform";
 import { createJob, getJob, listJobs, publicJob } from "./jobs";
+import { assertPaperReady, checkPaper, paperDescriptor, paperRuntime, quotePaper } from "./provider";
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -23,10 +24,11 @@ export async function handlePaperSendRest(
         slug: "paper-send",
         name: "PaperSend",
         status: "submitted",
-        fulfillment: "stub",
-        note: "Create a job at POST /v1/paper-send/jobs. Mail provider fulfillment is not wired on this gateway yet.",
+        ...paperDescriptor(),
         endpoints: {
           jobs: "/v1/paper-send/jobs",
+          quote: "/v1/paper-send/quote",
+          check: "/v1/paper-send/check",
           openapi: "/v1/paper-send/openapi.json",
           mcp: "/mcp/paper-send",
         },
@@ -39,6 +41,21 @@ export async function handlePaperSendRest(
     return withCors(request, Response.json(paperSendOpenApi()));
   }
 
+  if (segments[0] === "check" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
+    try {
+      return withCors(request, Response.json(await checkPaper()));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
+  }
+
+  if (segments[0] === "quote" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
+    const pages = Number(new URL(request.url).searchParams.get("pages") ?? "1");
+    return withCors(request, Response.json(quotePaper(pages)));
+  }
+
   if (segments[0] === "jobs" && segments.length === 1 && request.method === "GET") {
     if (!auth) return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
     return withCors(request, Response.json({ jobs: listJobs(auth.keyId).map(publicJob) }));
@@ -48,17 +65,19 @@ export async function handlePaperSendRest(
     if (!auth) return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
     const body = await readJson(request);
     try {
+      const runtime = paperRuntime();
+      if (runtime.mode !== "demo") assertPaperReady();
       const job = createJob({
         sender: body.sender,
         recipient: body.recipient,
         document: body.document as { filename?: string; pages?: number } | undefined,
         ownerKeyId: auth.keyId,
         catalogOrigin: catalogOrigin(),
+        live: runtime.mode !== "demo",
       });
       return withCors(request, Response.json(publicJob(job), { status: 201 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid job";
-      return withCors(request, jsonError(400, "invalid_request", message));
+      return withCors(request, errorResponse(error));
     }
   }
 

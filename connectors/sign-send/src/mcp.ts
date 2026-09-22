@@ -1,5 +1,6 @@
 import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
 import { createEnvelope, getEnvelope, listEnvelopes, publicEnvelope } from "./envelopes";
+import { assertSignReady, checkSign, signRuntime } from "./provider";
 
 const signerSchema = {
   type: "object",
@@ -12,9 +13,18 @@ const signerSchema = {
 
 const tools: McpTool[] = [
   {
+    name: "check_credentials",
+    description: "Validate the e-sign API key. Does not send an envelope. Demo mode skips the provider.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    async handler(_args, ctx) {
+      if (!ctx.auth) throw new Error("API key required");
+      return checkSign();
+    },
+  },
+  {
     name: "create_envelope",
     description:
-      "Create a SignSend draft envelope for collecting e-signatures on a PDF (1-5 sequential signers). Returns a review URL. Does not send anything — the human must review the document, signer list, and $2.99 price and pay. Gateway fulfillment is currently stubbed.",
+      "Create a SignSend draft envelope for collecting e-signatures on a PDF (1-5 sequential signers). Returns a review URL. Does not send anything — the human must review the document, signer list, and $2.99 price and pay.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -38,12 +48,15 @@ const tools: McpTool[] = [
     },
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
+      const runtime = signRuntime();
+      if (runtime.mode !== "demo") assertSignReady();
       return publicEnvelope(
         createEnvelope({
           document: args.document as { filename?: string; pages?: number } | undefined,
           signers: args.signers,
           ownerKeyId: ctx.auth.keyId,
           catalogOrigin: catalogOrigin(),
+          live: runtime.mode !== "demo",
         }),
       );
     },

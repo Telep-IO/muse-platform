@@ -1,7 +1,17 @@
 import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
 import { MAX_SCRIPT_CHARS, createCall, getCall, listCalls, publicCall } from "./calls";
+import { assertCallReady, callRuntime, checkCall } from "./provider";
 
 const tools: McpTool[] = [
+  {
+    name: "check_credentials",
+    description: "Validate the Twilio account SID and auth token. Does not place a call. Demo mode skips Twilio.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    async handler(_args, ctx) {
+      if (!ctx.auth) throw new Error("API key required");
+      return checkCall();
+    },
+  },
   {
     name: "create_call",
     description:
@@ -23,6 +33,8 @@ const tools: McpTool[] = [
     },
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
+      const runtime = callRuntime();
+      if (runtime.mode !== "demo") assertCallReady();
       return publicCall(
         createCall({
           to: String(args.to),
@@ -31,6 +43,7 @@ const tools: McpTool[] = [
           record: args.record === true,
           ownerKeyId: ctx.auth.keyId,
           catalogOrigin: catalogOrigin(),
+          live: runtime.mode !== "demo",
         }),
       );
     },

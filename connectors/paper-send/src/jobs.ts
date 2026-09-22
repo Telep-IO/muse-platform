@@ -23,6 +23,7 @@ export type Job = {
   createdAt: string;
   ownerKeyId: string;
   note: string;
+  fulfillment: "stub" | "live";
 };
 
 const STUB_NOTE =
@@ -65,14 +66,16 @@ export function createJob(input: {
   document?: { filename?: string; pages?: number };
   ownerKeyId: string;
   catalogOrigin: string;
+  live?: boolean;
 }): Job {
   const sender = requireAddress(input.sender, "sender");
   const recipient = requireAddress(input.recipient, "recipient");
   const pages = Math.max(1, Math.min(5, Number(input.document?.pages) || 1));
   const id = `ps_${crypto.randomUUID()}`;
+  const live = input.live === true;
   const job: Job = {
     id,
-    status: "stubbed",
+    status: live ? "draft" : "stubbed",
     sender,
     recipient,
     document: {
@@ -84,7 +87,10 @@ export function createJob(input: {
     reviewUrl: `${input.catalogOrigin}/connectors/paper-send#review-${id}`,
     createdAt: new Date().toISOString(),
     ownerKeyId: input.ownerKeyId,
-    note: STUB_NOTE,
+    note: live
+      ? "Draft only. Lob was not asked to print or mail this job. A human must review and pay before any letter is created."
+      : STUB_NOTE,
+    fulfillment: live ? "live" : "stub",
   };
   jobs.set(id, job);
   return job;

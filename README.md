@@ -75,14 +75,16 @@ npm run build
 | `STRIPE_SECRET_KEY` | Optional. Without it, Checkout helpers return a stub URL |
 | `STRIPE_WEBHOOK_SECRET` | Optional. Without it, `/v1/billing/webhook` acknowledges as a stub |
 
+Connector keys (PaperSend, Sumvid, ShipSignal, SignSend, FaxSend, CallSend, InkSend, DomainSend) use namespaced prefixes so one Vercel project can hold them. Full list, Production values, and the Express-name mapping: [docs/VERCEL-ENV.md](docs/VERCEL-ENV.md).
+
 No secrets belong in git. Demo key `muse_sk_demo_localdev` is for docs try-it and smoke tests only.
 
 ## Vercel
 
 1. Import `Telep-IO/muse-platform`.
 2. Framework: Next.js. Root directory: repository root.
-3. Set env vars for Production and Preview.
-4. Production `NEXT_PUBLIC_CATALOG_URL=https://muse.telep.io` and `NEXT_PUBLIC_API_URL=https://api.muse.telep.io`.
+3. Set env vars for Production and Preview from [docs/VERCEL-ENV.md](docs/VERCEL-ENV.md). Paste empty names, fill values in the dashboard, then **Redeploy**. Env edits do not apply to the current deployment.
+4. Production `NEXT_PUBLIC_CATALOG_URL=https://muse.telep.io` and `NEXT_PUBLIC_API_URL=https://api.muse.telep.io`. Keep every `*_APP_MODE` at `demo` until gateway wiring lands.
 5. Attach both domains to this project.
 
 ## Cloudflare DNS (Jonathan owns DNS)
@@ -110,4 +112,4 @@ See [FOUNDATION.md](FOUNDATION.md) for hostname, path, key format, and how to ad
 
 ## Status honesty
 
-PaperSend, Sumvid, ShipSignal, and the *-send connectors (SignSend, FaxSend, CallSend, InkSend, DomainSend) are **callable stubs** on this gateway. They do not print, summarize from captions, poll carriers, request live signatures, transmit faxes, place calls, robot-write letters, or register domains. “Submitted” means Telep filed the connector for Meta review — not that Muse listed it. “Ready” means the module is callable on this gateway, not that Meta listed or endorsed it.
+With `*_APP_MODE` unset or `demo`, PaperSend, Sumvid, ShipSignal, and the *-send connectors stay **in-memory stubs**. Set `test` or `live` plus that connector’s keys and the gateway calls the provider in-process: Lob auth, Sumvid summarize, ShipSignal tracking, e-sign/fax/Twilio/Handwrytten auth, and OpenSRS availability. Those calls still do not print mail, transmit faxes, place calls, order handwriting, send signature requests, or register domains. “Submitted” means Telep filed the connector for Meta review — not that Muse listed it. “Ready” means the module is callable on this gateway, not that Meta listed or endorsed it. Smoke commands: [docs/VERCEL-ENV.md](docs/VERCEL-ENV.md).

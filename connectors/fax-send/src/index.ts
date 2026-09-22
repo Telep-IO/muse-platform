@@ -1,3 +1,4 @@
+export { checkFax } from "./provider";
 export { handleFaxSendRest } from "./rest";
 export { handleFaxSendMcp } from "./mcp";
 export { faxSendOpenApi } from "./openapi";

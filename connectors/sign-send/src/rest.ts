@@ -1,5 +1,6 @@
-import { catalogOrigin, jsonError, withCors, type AuthResult } from "@telep/platform";
-import { PRICE_CENTS, createEnvelope, demoEvent, getEnvelope, listEnvelopes, publicEnvelope } from "./envelopes";
+import { catalogOrigin, errorResponse, jsonError, withCors, type AuthResult } from "@telep/platform";
+import { createEnvelope, demoEvent, getEnvelope, listEnvelopes, publicEnvelope } from "./envelopes";
+import { assertSignReady, checkSign, quoteSign, signDescriptor, signRuntime } from "./provider";
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -23,12 +24,13 @@ export async function handleSignSendRest(
         slug: "sign-send",
         name: "SignSend",
         status: "building",
-        fulfillment: "stub",
-        price: `$${(PRICE_CENTS / 100).toFixed(2)} per envelope`,
+        price: "$2.99 per envelope",
         limits: "PDF up to 5 pages, 1-5 sequential signers",
-        note: "Create an envelope at POST /v1/sign-send/envelopes. E-signature provider fulfillment is not wired on this gateway yet.",
+        ...signDescriptor(),
         endpoints: {
           envelopes: "/v1/sign-send/envelopes",
+          quote: "/v1/sign-send/quote",
+          check: "/v1/sign-send/check",
           openapi: "/v1/sign-send/openapi.json",
           mcp: "/mcp/sign-send",
         },
@@ -44,6 +46,20 @@ export async function handleSignSendRest(
   const needsAuth = (message = "Authorization: Bearer <key> is required") =>
     withCors(request, jsonError(401, "unauthorized", message));
 
+  if (segments[0] === "check" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    try {
+      return withCors(request, Response.json(await checkSign()));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
+  }
+
+  if (segments[0] === "quote" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    return withCors(request, Response.json(quoteSign()));
+  }
+
   if (segments[0] === "envelopes" && segments.length === 1 && request.method === "GET") {
     if (!auth) return needsAuth();
     return withCors(request, Response.json({ envelopes: listEnvelopes(auth.keyId).map(publicEnvelope) }));
@@ -53,16 +69,18 @@ export async function handleSignSendRest(
     if (!auth) return needsAuth();
     const body = await readJson(request);
     try {
+      const runtime = signRuntime();
+      if (runtime.mode !== "demo") assertSignReady();
       const envelope = createEnvelope({
         document: body.document as { filename?: string; pages?: number } | undefined,
         signers: body.signers,
         ownerKeyId: auth.keyId,
         catalogOrigin: catalogOrigin(),
+        live: runtime.mode !== "demo",
       });
       return withCors(request, Response.json(publicEnvelope(envelope), { status: 201 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid envelope";
-      return withCors(request, jsonError(400, "invalid_request", message));
+      return withCors(request, errorResponse(error));
     }
   }
 

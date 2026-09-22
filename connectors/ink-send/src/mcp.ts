@@ -1,5 +1,6 @@
 import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
 import { CARDS, createLetter, getLetter, listLetters, publicLetter } from "./letters";
+import { assertInkReady, checkInk, inkRuntime } from "./provider";
 
 const addressSchema = {
   type: "object",
@@ -14,6 +15,15 @@ const addressSchema = {
 };
 
 const tools: McpTool[] = [
+  {
+    name: "check_credentials",
+    description: "Validate the Handwrytten API key via getUser. Does not order a card. Demo mode skips the provider.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    async handler(_args, ctx) {
+      if (!ctx.auth) throw new Error("API key required");
+      return checkInk();
+    },
+  },
   {
     name: "create_letter",
     description:
@@ -31,6 +41,8 @@ const tools: McpTool[] = [
     },
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
+      const runtime = inkRuntime();
+      if (runtime.mode !== "demo") assertInkReady();
       return publicLetter(
         createLetter({
           message: args.message,
@@ -38,6 +50,7 @@ const tools: McpTool[] = [
           card: args.card,
           handwriting_style: args.handwriting_style,
           ownerKeyId: ctx.auth.keyId,
+          live: runtime.mode !== "demo",
           catalogOrigin: catalogOrigin(),
         }),
       );

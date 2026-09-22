@@ -23,6 +23,7 @@ export type Envelope = {
   createdAt: string;
   ownerKeyId: string;
   note: string;
+  fulfillment: "stub" | "live";
 };
 
 export const PRICE_CENTS = 299;
@@ -51,6 +52,7 @@ export function createEnvelope(input: {
   signers: unknown;
   ownerKeyId: string;
   catalogOrigin: string;
+  live?: boolean;
 }): Envelope {
   if (!Array.isArray(input.signers) || input.signers.length === 0) {
     throw new Error("signers must be a non-empty array (1-5 signers)");
@@ -82,7 +84,10 @@ export function createEnvelope(input: {
     reviewUrl: `${input.catalogOrigin}/connectors/sign-send#review-${id}`,
     createdAt: new Date().toISOString(),
     ownerKeyId: input.ownerKeyId,
-    note: STUB_NOTE,
+    note: input.live
+      ? "Draft only. No signature request was sent. A human must review and pay before the e-sign provider is asked to send."
+      : STUB_NOTE,
+    fulfillment: input.live ? "live" : "stub",
   };
   envelopes.set(id, envelope);
   return envelope;

@@ -1,6 +1,6 @@
 export { authenticate, AuthError, isWriteMethod, KEY_PATTERN, lookupKey, parseBearer } from "./auth";
 export type { ApiKeyEnv, AuthResult } from "./auth";
-export { errorBody, fromUnknown, HttpError, jsonError } from "./errors";
+export { errorBody, errorResponse, fromUnknown, HttpError, jsonError } from "./errors";
 export { rateLimit, rateLimitHeaders } from "./rate-limit";
 export type { RateLimitResult } from "./rate-limit";
 export { allowedOrigins, corsHeaders, isAllowedOrigin, preflight, withCors } from "./cors";
@@ -11,3 +11,5 @@ export { createCheckoutSession, handleWebhook, stripeConfigured } from "./stripe
 export type { CheckoutInput, CheckoutResult, WebhookResult } from "./stripe";
 export { createMcpHandler } from "./mcp";
 export type { McpTool } from "./mcp";
+export { assertProviderOk, basicAuthHeader, envValue, providerRequest, readAppMode, requireCredentials } from "./runtime";
+export type { AppMode, Env } from "./runtime";

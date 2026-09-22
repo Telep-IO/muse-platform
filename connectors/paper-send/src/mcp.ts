@@ -1,11 +1,22 @@
 import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
 import { createJob, getJob, listJobs, publicJob } from "./jobs";
+import { assertPaperReady, checkPaper, paperRuntime } from "./provider";
 
 const tools: McpTool[] = [
   {
+    name: "check_credentials",
+    description:
+      "Validate PaperSend Lob (and Stripe, if set) credentials. Read-only: lists Lob addresses and does not create a letter. Demo mode skips the provider.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    async handler(_args, ctx) {
+      if (!ctx.auth) throw new Error("API key required");
+      return checkPaper();
+    },
+  },
+  {
     name: "create_mail_job",
     description:
-      "Create a PaperSend draft job to print and mail a PDF in the US. Returns a review URL. Does not mail anything — the human must review and pay. Gateway fulfillment is currently stubbed.",
+      "Create a PaperSend draft job to print and mail a PDF in the US. Returns a review URL. Does not mail anything — the human must review and pay. Demo mode stores a stub. test/live mode still does not call Lob to print.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -46,6 +57,8 @@ const tools: McpTool[] = [
     },
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
+      const runtime = paperRuntime();
+      if (runtime.mode !== "demo") assertPaperReady();
       return publicJob(
         createJob({
           sender: args.sender,
@@ -53,6 +66,7 @@ const tools: McpTool[] = [
           document: args.document as { filename?: string; pages?: number } | undefined,
           ownerKeyId: ctx.auth.keyId,
           catalogOrigin: catalogOrigin(),
+          live: runtime.mode !== "demo",
         }),
       );
     },

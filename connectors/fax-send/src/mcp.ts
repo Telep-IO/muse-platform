@@ -1,7 +1,17 @@
 import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
 import { createFax, getFax, listFaxes, publicFax } from "./faxes";
+import { assertFaxReady, checkFax, faxRuntime } from "./provider";
 
 const tools: McpTool[] = [
+  {
+    name: "check_credentials",
+    description: "Validate fax provider credentials. Does not transmit a fax. Demo mode skips the provider.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    async handler(_args, ctx) {
+      if (!ctx.auth) throw new Error("API key required");
+      return checkFax();
+    },
+  },
   {
     name: "create_fax",
     description:
@@ -30,6 +40,8 @@ const tools: McpTool[] = [
     },
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
+      const runtime = faxRuntime();
+      if (runtime.mode !== "demo") assertFaxReady();
       return publicFax(
         createFax({
           to: args.to,
@@ -37,6 +49,7 @@ const tools: McpTool[] = [
           coverPage: args.coverPage,
           ownerKeyId: ctx.auth.keyId,
           catalogOrigin: catalogOrigin(),
+          live: runtime.mode !== "demo",
         }),
       );
     },

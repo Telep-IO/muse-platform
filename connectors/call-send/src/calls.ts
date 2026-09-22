@@ -13,6 +13,7 @@ export type Call = {
   createdAt: string;
   ownerKeyId: string;
   note: string;
+  fulfillment: "stub" | "live";
 };
 
 export const PRICE_CENTS = 99;
@@ -31,6 +32,7 @@ export function createCall(input: {
   record?: boolean;
   ownerKeyId: string;
   catalogOrigin: string;
+  live?: boolean;
 }): Call {
   const to = String(input.to ?? "").trim();
   if (!to.startsWith("+") || to.length < 2) {
@@ -56,7 +58,10 @@ export function createCall(input: {
     reviewUrl: `${input.catalogOrigin}/connectors/call-send#review-${id}`,
     createdAt: new Date().toISOString(),
     ownerKeyId: input.ownerKeyId,
-    note: STUB_NOTE,
+    note: input.live
+      ? "Draft only. No call was placed. A human must review the verbatim script and pay before Twilio is asked to dial."
+      : STUB_NOTE,
+    fulfillment: input.live ? "live" : "stub",
   };
   calls.set(id, call);
   return call;

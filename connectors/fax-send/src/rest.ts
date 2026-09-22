@@ -1,5 +1,6 @@
-import { catalogOrigin, jsonError, withCors, type AuthResult } from "@telep/platform";
-import { PRICE_PER_PAGE_CENTS, createFax, demoEvent, getFax, listFaxes, publicFax } from "./faxes";
+import { catalogOrigin, errorResponse, jsonError, withCors, type AuthResult } from "@telep/platform";
+import { createFax, demoEvent, getFax, listFaxes, publicFax } from "./faxes";
+import { assertFaxReady, checkFax, faxDescriptor, faxRuntime, quoteFax } from "./provider";
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -23,12 +24,13 @@ export async function handleFaxSendRest(
         slug: "fax-send",
         name: "FaxSend",
         status: "building",
-        fulfillment: "stub",
-        price: `$${(PRICE_PER_PAGE_CENTS / 100).toFixed(2)} per transmitted page`,
+        price: "$0.99 per transmitted page",
         limits: "PDF up to 10 pages, optional cover page (billable)",
-        note: "Create a fax at POST /v1/fax-send/faxes. Fax provider fulfillment is not wired on this gateway yet.",
+        ...faxDescriptor(),
         endpoints: {
           faxes: "/v1/fax-send/faxes",
+          quote: "/v1/fax-send/quote",
+          check: "/v1/fax-send/check",
           openapi: "/v1/fax-send/openapi.json",
           mcp: "/mcp/fax-send",
         },
@@ -44,6 +46,21 @@ export async function handleFaxSendRest(
   const needsAuth = (message = "Authorization: Bearer <key> is required") =>
     withCors(request, jsonError(401, "unauthorized", message));
 
+  if (segments[0] === "check" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    try {
+      return withCors(request, Response.json(await checkFax()));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
+  }
+
+  if (segments[0] === "quote" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    const pages = Number(new URL(request.url).searchParams.get("pages") ?? "1");
+    return withCors(request, Response.json(quoteFax(pages)));
+  }
+
   if (segments[0] === "faxes" && segments.length === 1 && request.method === "GET") {
     if (!auth) return needsAuth();
     return withCors(request, Response.json({ faxes: listFaxes(auth.keyId).map(publicFax) }));
@@ -53,17 +70,19 @@ export async function handleFaxSendRest(
     if (!auth) return needsAuth();
     const body = await readJson(request);
     try {
+      const runtime = faxRuntime();
+      if (runtime.mode !== "demo") assertFaxReady();
       const fax = createFax({
         to: body.to,
         document: body.document as { filename?: string; pages?: number } | undefined,
         coverPage: body.coverPage,
         ownerKeyId: auth.keyId,
         catalogOrigin: catalogOrigin(),
+        live: runtime.mode !== "demo",
       });
       return withCors(request, Response.json(publicFax(fax), { status: 201 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid fax";
-      return withCors(request, jsonError(400, "invalid_request", message));
+      return withCors(request, errorResponse(error));
     }
   }
 

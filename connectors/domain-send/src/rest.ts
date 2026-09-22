@@ -1,5 +1,6 @@
-import { catalogOrigin, jsonError, withCors, type AuthResult } from "@telep/platform";
-import { checkAvailability, createDomain, demoEvent, getDomain, listDomains, publicDomain } from "./domains";
+import { catalogOrigin, errorResponse, jsonError, withCors, type AuthResult } from "@telep/platform";
+import { createDomain, demoEvent, getDomain, listDomains, publicDomain } from "./domains";
+import { assertDomainReady, checkDomainCredentials, domainDescriptor, domainRuntime, resolveAvailability } from "./provider";
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -23,12 +24,12 @@ export async function handleDomainSendRest(
         slug: "domain-send",
         name: "DomainSend",
         status: "planned",
-        fulfillment: "stub",
         price: "from $13.99/yr (.org)",
         limits: "registration only in v1, no renewals; TLDs: com, net, org, io, dev, app, tools; 1-2 year terms",
-        note: "Check availability at POST /v1/domain-send/domains/check, then register at POST /v1/domain-send/domains. Registrar fulfillment is not wired on this gateway yet.",
+        ...domainDescriptor(),
         endpoints: {
           domains: "/v1/domain-send/domains",
+          check: "/v1/domain-send/check",
           openapi: "/v1/domain-send/openapi.json",
           mcp: "/mcp/domain-send",
         },
@@ -44,12 +45,25 @@ export async function handleDomainSendRest(
   const needsAuth = (message = "Authorization: Bearer <key> is required") =>
     withCors(request, jsonError(401, "unauthorized", message));
 
+  if (segments[0] === "check" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    try {
+      return withCors(request, Response.json(await checkDomainCredentials()));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
+  }
+
   if (segments[0] === "domains" && segments[1] === "check" && segments.length === 2 && request.method === "POST") {
     if (!auth) return needsAuth();
     const body = await readJson(request);
     const domain = String(body.domain ?? "").trim().toLowerCase();
-    const result = checkAvailability(body.domain);
-    return withCors(request, Response.json({ domain, ...result }));
+    try {
+      const result = await resolveAvailability(body.domain);
+      return withCors(request, Response.json({ domain, ...result }));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
   }
 
   if (segments[0] === "domains" && segments.length === 1 && request.method === "GET") {
@@ -61,16 +75,18 @@ export async function handleDomainSendRest(
     if (!auth) return needsAuth();
     const body = await readJson(request);
     try {
+      const runtime = domainRuntime();
+      if (runtime.mode !== "demo") assertDomainReady();
       const record = createDomain({
         domain: body.domain,
         years: body.years,
         ownerKeyId: auth.keyId,
         catalogOrigin: catalogOrigin(),
+        live: runtime.mode !== "demo",
       });
       return withCors(request, Response.json(publicDomain(record), { status: 201 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid domain";
-      return withCors(request, jsonError(400, "invalid_request", message));
+      return withCors(request, errorResponse(error));
     }
   }
 
