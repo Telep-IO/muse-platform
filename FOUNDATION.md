@@ -15,6 +15,19 @@ If the `Host` header **contains** `api.`, the app is gateway-first: `/` rewrites
 
 Cloudflare: both `muse.telep.io` and `api.muse.telep.io` CNAME to this Vercel project. Jonathan owns DNS.
 
+## Repository layout
+
+| Path | Role |
+| --- | --- |
+| `app/` | Next.js catalog and gateway handlers. This is what Vercel builds. |
+| `connectors/` | Workspace packages `@telep/*`. Agent-facing MCP + REST stubs. |
+| `packages/` | Workspace packages `@telep/registry` and `@telep/platform`. |
+| `services/` | Express fulfillment backends. Own lockfiles. Not workspaces. Not imported by `app/`, `connectors/`, or `packages/`. |
+
+CallSend, DomainSend, FaxSend, InkSend, and SignSend fulfillment code lives in `services/{slug}`, moved from the former standalone repos. Do not add `services/*` to npm workspaces. Do not import `services/` from the Next.js build.
+
+PaperSend's live mail path stays in the separate `Telep-IO/paper-send` repository. `Telep-IO/api-gateway-app` is a legacy Vite frontend and is not this gateway.
+
 ## Path scheme
 
 ```
