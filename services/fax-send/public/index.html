@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FaxSend — review your fax</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+  .page img { width: 100%; border: 1px solid #ccc; margin-bottom: 1rem; }
+  .warn { background: #fff3cd; border: 1px solid #e6c200; padding: 1rem; margin: 1rem 0; }
+  button { font-size: 1.1rem; padding: .75rem 1.5rem; }
+  #status { white-space: pre-wrap; background: #f6f6f6; padding: 1rem; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>Review your fax</h1>
+<p id="loading">Loading… (open this page from your private review link)</p>
+<div id="review" hidden>
+  <p><strong>To:</strong> <span id="to"></span></p>
+  <p><strong>Pages:</strong> <span id="pages"></span> (cover page counts as a page when enabled)</p>
+  <p><strong>Price:</strong> <span id="price"></span> — charged once, only after you confirm and pay.</p>
+  <div class="page" id="pageWrap"></div>
+  <div class="warn">
+    <label><input type="checkbox" id="confirm">
+      <span id="confirmation"></span></label>
+  </div>
+  <p><a id="terms" href="#">Terms</a> · <a id="privacy" href="#">Privacy Notice</a></p>
+  <button id="pay" disabled>Continue to payment</button>
+  <div id="status"></div>
+</div>
+<script>
+const match = location.hash.match(/#fax=([0-9a-f-]+)\.([0-9a-f]+)/);
+const $ = id => document.getElementById(id);
+const say = t => { $('status').textContent = t; };
+if (!match) { $('loading').textContent = 'This page needs your private review link.'; }
+else {
+  const [, id, token] = match;
+  const auth = { 'Authorization': 'Bearer ' + token };
+  const fax = await fetch(`/api/faxes/${id}`, { headers: auth }).then(r => r.json());
+  if (fax.error) { $('loading').textContent = fax.error; }
+  else {
+    $('loading').hidden = true; $('review').hidden = false;
+    $('to').textContent = fax.fax_number;
+    $('pages').textContent = fax.pages;
+    $('price').textContent = `$${(fax.amount_cents / 100).toFixed(2)}`;
+    $('terms').href = `/policies/terms/${fax.terms_version}`;
+    $('privacy').href = `/policies/privacy/${fax.privacy_version}`;
+    const cfg = await fetch('/api/config').then(r => r.json());
+    // Confirmation wording is fetched from the server in the full build;
+    // the scaffold keeps a copy here for the demo flow.
+    $('confirmation').textContent = 'I have reviewed the fax document, the destination fax number, and the price. I authorize automatic fax transmission after successful payment; changes or cancellation may no longer be possible.';
+    const wrap = $('pageWrap');
+    for (let n = 1; n <= fax.pages; n++) {
+      const img = document.createElement('img');
+      img.src = `/api/faxes/${id}/pages/${n}`;
+      img.alt = `Page ${n}`;
+      // attach the same bearer token via fetch -> blob (keeps token out of URLs)
+      const blob = await fetch(img.src, { headers: auth }).then(r => r.blob());
+      img.src = URL.createObjectURL(blob);
+      const div = document.createElement('div'); div.className = 'page'; div.appendChild(img);
+      wrap.appendChild(div);
+    }
+    $('confirm').addEventListener('change', e => { $('pay').disabled = !e.target.checked; });
+    $('pay').addEventListener('click', async () => {
+      say('Starting secure checkout…');
+      const res = await fetch(`/api/faxes/${id}/checkout`, {
+        method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          confirmed: true,
+          review_hash: fax.review_hash,
+          terms_version: fax.terms_version,
+          privacy_version: fax.privacy_version,
+          confirmation: $('confirmation').textContent,
+        }),
+      }).then(r => r.json());
+      if (res.error) say('Error: ' + res.error);
+      else location.href = res.checkout_url;
+    });
+  }
+}
+</script>
+</body>
+</html>

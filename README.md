@@ -13,16 +13,21 @@ Telep IO builds **independent** connectors that work with [Muse](https://muse.ai
 One Next.js App Router app, with connector modules kept separate so the path to ~100 connectors stays obvious:
 
 ```
-app/                    Catalog pages + gateway route handlers
+app/                    Catalog pages + gateway route handlers (Vercel)
 packages/registry/      Typed connector catalog (source of truth)
 packages/platform/      Auth, CORS, errors, rate-limit stub, OpenAPI merge, Stripe helpers, MCP HTTP
-connectors/paper-send/  First callable module (REST + MCP + OpenAPI)
+connectors/paper-send/  Callable MCP + REST stub (live mail stays in Telep-IO/paper-send)
 connectors/sumvid/      YouTube summarize stub (REST + MCP + OpenAPI)
 connectors/shipsignal/  Package tracking stub (REST + MCP + OpenAPI)
-connectors/*-send/      Sign/fax/call/ink/domain stubs (REST + MCP + OpenAPI)
-lib/gateway.ts          Dispatch: slug → module
+connectors/*-send/      Sign/fax/call/ink/domain MCP + REST stubs
+services/*-send/        Express fulfillment apps (not workspaces; not in the Vercel build)
+lib/gateway.ts          Dispatch: slug → connector module
 middleware.ts           api.* host rewrites `/` → `/v1`
 ```
+
+`services/` holds the Express fulfillment apps formerly published as standalone repos (`call-send`, `domain-send`, `fax-send`, `ink-send`, `sign-send`). Each keeps its own `package.json` and lockfile. They are not npm workspaces and the Next.js app does not import them. See [services/README.md](services/README.md).
+
+PaperSend's live print-and-mail app stays at [Telep-IO/paper-send](https://github.com/Telep-IO/paper-send). The legacy Vite frontend [Telep-IO/api-gateway-app](https://github.com/Telep-IO/api-gateway-app) is not this gateway.
 
 Production is two hostnames, one Vercel project. Preview and local are one host: `/` is the catalog; `/v1`, `/mcp`, and `/health` are the gateway.
 
