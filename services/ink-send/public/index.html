@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkSend — review your letter</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+  .letter { background: #fffdf7; border: 1px solid #e3d9c2; border-radius: 4px; padding: 2rem; margin: 1rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .handwriting { font-family: 'Segoe Script', 'Bradley Hand', 'Brush Script MT', 'Comic Sans MS', cursive;
+                 font-size: 1.35rem; line-height: 1.7; color: #1a3a8f; white-space: pre-wrap; }
+  .preview-note { font-size: .85rem; color: #6b5d3f; background: #fff8e1; border: 1px solid #e6c200;
+                  padding: .6rem .8rem; margin-bottom: 1rem; border-radius: 4px; }
+  .warn { background: #fff3cd; border: 1px solid #e6c200; padding: 1rem; margin: 1rem 0; }
+  .addr { background: #f6f6f6; padding: 1rem; margin: 1rem 0; }
+  button { font-size: 1.1rem; padding: .75rem 1.5rem; }
+  #status { white-space: pre-wrap; background: #f6f6f6; padding: 1rem; margin-top: 1rem; }
+  .state-sent { color: #1a6b2f; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>Review your letter</h1>
+<p id="loading">Loading… (open this page from your private review link)</p>
+<div id="review" hidden>
+  <div class="preview-note">
+    <strong>Preview only.</strong> This is a handwriting-style rendering of your
+    message. The finished letter is written in <strong>real ink by a handwriting
+    robot</strong> and mailed First Class.
+  </div>
+  <div class="letter"><div class="handwriting" id="message"></div></div>
+  <div class="addr">
+    <strong>To:</strong><br>
+    <span id="to"></span>
+  </div>
+  <p><strong>Card:</strong> <span id="card"></span></p>
+  <p><strong>Handwriting style:</strong> <span id="style"></span></p>
+  <p><strong>Price:</strong> <span id="price"></span> — charged once, only after you confirm and pay.</p>
+  <div class="warn">
+    <label><input type="checkbox" id="confirm">
+      <span id="confirmation"></span></label>
+  </div>
+  <p><a id="terms" href="#">Terms</a> · <a id="privacy" href="#">Privacy Notice</a></p>
+  <button id="pay" disabled>Continue to payment</button>
+  <div id="status"></div>
+</div>
+<script>
+const match = location.hash.match(/#letter=([0-9a-f-]+)\.([0-9a-f]+)/);
+const $ = id => document.getElementById(id);
+const say = t => { $('status').textContent = t; };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cardLabel = c => ({ 'plain-letter': 'Plain letter', 'thank-you': 'Thank-you card',
+  'condolence': 'Condolence card', 'holiday': 'Holiday card' }[c] || c);
+
+if (!match) { $('loading').textContent = 'This page needs your private review link.'; }
+else {
+  const [, id, token] = match;
+  const auth = { 'Authorization': 'Bearer ' + token };
+  const cfg = await fetch('/api/config').then(r => r.json());
+  const letter = await fetch(`/api/letters/${id}`, { headers: auth }).then(r => r.json());
+  if (letter.error) { $('loading').textContent = letter.error; }
+  else {
+    $('loading').hidden = true; $('review').hidden = false;
+    $('message').textContent = letter.message ?? '(message removed after 30-day purge)';
+    const t = letter.to || {};
+    $('to').innerHTML = [t.name, t.address_line1, t.address_line2, `${t.city || ''}, ${t.state || ''} ${t.zip || ''}`, t.country]
+      .filter(Boolean).map(esc).join('<br>');
+    $('card').textContent = cardLabel(letter.card);
+    $('style').textContent = letter.handwriting_style || 'Default';
+    $('price').textContent = `$${(letter.amount_cents / 100).toFixed(2)}`;
+    $('terms').href = `/policies/terms/${letter.terms_version}`;
+    $('privacy').href = `/policies/privacy/${letter.privacy_version}`;
+    $('confirmation').textContent = cfg.confirmation;
+
+    const poll = async () => {
+      const cur = await fetch(`/api/letters/${id}`, { headers: auth }).then(r => r.json());
+      if (cur.error) { say('Error: ' + cur.error); return; }
+      say(`Status: ${cur.state}${cur.provider_status ? ' (provider: ' + cur.provider_status + ')' : ''}\n` +
+        (cur.state === 'sent'
+          ? 'Accepted by the handwriting provider — it will be written in ink and mailed First Class. Delivery is not tracked.'
+          : ''));
+      if (['sent', 'failed', 'refunded', 'needs_review'].includes(cur.state)) return;
+      setTimeout(poll, 5000);
+    };
+
+    if (['paid', 'sending', 'sent', 'failed', 'refund_pending', 'refunded', 'needs_review'].includes(letter.state)) {
+      $('pay').disabled = true; $('confirm').disabled = true;
+      say('This letter is past review.'); poll();
+    } else {
+      $('confirm').addEventListener('change', e => { $('pay').disabled = !e.target.checked; });
+      $('pay').addEventListener('click', async () => {
+        say('Starting secure checkout…');
+        const res = await fetch(`/api/letters/${id}/checkout`, {
+          method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            confirmed: true,
+            review_hash: letter.review_hash,
+            terms_version: letter.terms_version,
+            privacy_version: letter.privacy_version,
+            confirmation: cfg.confirmation,
+          }),
+        }).then(r => r.json());
+        if (res.error) { say('Error: ' + res.error); return; }
+        if (res.demo) {
+          $('pay').disabled = true; $('confirm').disabled = true;
+          say('Demo payment recorded — the letter is being prepared.'); poll();
+        } else {
+          location.href = res.checkout_url;
+        }
+      });
+    }
+  }
+}
+</script>
+</body>
+</html>
