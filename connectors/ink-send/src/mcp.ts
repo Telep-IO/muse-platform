@@ -1,18 +1,6 @@
-import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, type McpTool } from "@telep/platform";
+import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, postalAddress, type McpTool } from "@telep/platform";
 import { CARDS, createLetter, getLetter, listLetters, publicLetter } from "./letters";
 import { assertInkReady, checkInk, inkRuntime } from "./provider";
-
-const addressSchema = {
-  type: "object",
-  required: ["name", "address_line1", "address_city", "address_state", "address_zip"],
-  properties: {
-    name: { type: "string" },
-    address_line1: { type: "string" },
-    address_city: { type: "string" },
-    address_state: { type: "string" },
-    address_zip: { type: "string" },
-  },
-};
 
 export const inkSendTools: McpTool[] = [
   mcpCheckTool("Validate the Handwrytten API key via getUser. Does not order a card. Demo mode skips the provider.", () => checkInk()),
@@ -26,7 +14,7 @@ export const inkSendTools: McpTool[] = [
       required: ["message", "to"],
       properties: {
         message: { type: "string", description: "Letter text, max 5000 characters" },
-        to: { ...addressSchema, description: "Recipient name and postal address" },
+        to: { ...postalAddress(), description: "Recipient name and postal address" },
         card: { type: "string", enum: CARDS, default: "plain" },
         handwriting_style: { type: "string", default: "casual" },
       },

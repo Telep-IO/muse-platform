@@ -1,19 +1,6 @@
-import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, type McpTool } from "@telep/platform";
+import { catalogOrigin, createMcpHandler, mcpAuth, mcpCheckTool, mcpGetTool, mcpListTool, postalAddress, type McpTool } from "@telep/platform";
 import { createJob, getJob, listJobs, publicJob } from "./jobs";
 import { assertPaperReady, checkPaper, paperRuntime } from "./provider";
-
-const addressSchema = {
-  type: "object",
-  required: ["name", "address_line1", "address_city", "address_state", "address_zip"],
-  properties: {
-    name: { type: "string" },
-    address_line1: { type: "string" },
-    address_line2: { type: "string" },
-    address_city: { type: "string" },
-    address_state: { type: "string" },
-    address_zip: { type: "string" },
-  },
-};
 
 export const paperSendTools: McpTool[] = [
   mcpCheckTool(
@@ -29,8 +16,8 @@ export const paperSendTools: McpTool[] = [
       additionalProperties: false,
       required: ["sender", "recipient"],
       properties: {
-        sender: addressSchema,
-        recipient: addressSchema,
+        sender: postalAddress({ line2: true }),
+        recipient: postalAddress({ line2: true }),
         document: {
           type: "object",
           properties: {
