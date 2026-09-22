@@ -1,6 +1,6 @@
 export type Summary = {
   id: string;
-  status: "stubbed";
+  status: "stubbed" | "ready";
   youtubeUrl: string;
   videoId: string;
   language: string;
@@ -10,7 +10,7 @@ export type Summary = {
   createdAt: string;
   ownerKeyId: string;
   note: string;
-  fulfillment: "stub";
+  fulfillment: "stub" | "live";
 };
 
 export const STUB_NOTE =

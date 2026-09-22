@@ -23,6 +23,7 @@ export type Letter = {
   createdAt: string;
   ownerKeyId: string;
   note: string;
+  fulfillment: "stub" | "live";
 };
 
 export const PRICE_CENTS = 399;
@@ -60,6 +61,7 @@ export function createLetter(input: {
   handwriting_style?: unknown;
   ownerKeyId: string;
   catalogOrigin: string;
+  live?: boolean;
 }): Letter {
   const message = String(input.message ?? "").trim();
   if (!message) throw new Error("message is required and must be non-empty");
@@ -85,7 +87,10 @@ export function createLetter(input: {
     reviewUrl: `${input.catalogOrigin}/connectors/ink-send#review-${id}`,
     createdAt: new Date().toISOString(),
     ownerKeyId: input.ownerKeyId,
-    note: STUB_NOTE,
+    note: input.live
+      ? "Draft only. Handwrytten was not asked to write or mail. A human must review and pay first."
+      : STUB_NOTE,
+    fulfillment: input.live ? "live" : "stub",
   };
   letters.set(id, letter);
   return letter;

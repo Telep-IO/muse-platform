@@ -13,6 +13,7 @@ export type Domain = {
   createdAt: string;
   ownerKeyId: string;
   note: string;
+  fulfillment: "stub" | "live";
 };
 
 export type AvailabilityResult = {
@@ -69,6 +70,7 @@ export function createDomain(input: {
   years?: unknown;
   ownerKeyId: string;
   catalogOrigin: string;
+  live?: boolean;
 }): Domain {
   const domain = normalizeDomain(input.domain);
   if (!domain) throw new Error("domain is required");
@@ -96,7 +98,10 @@ export function createDomain(input: {
     reviewUrl: `${input.catalogOrigin}/connectors/domain-send#review-${id}`,
     createdAt: new Date().toISOString(),
     ownerKeyId: input.ownerKeyId,
-    note: STUB_NOTE,
+    note: input.live
+      ? "Draft only. This name was not registered. A human must review and pay before OpenSRS is asked to register."
+      : STUB_NOTE,
+    fulfillment: input.live ? "live" : "stub",
   };
   domains.set(id, record);
   return record;

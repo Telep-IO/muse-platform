@@ -1,10 +1,20 @@
 import { catalogOrigin, createMcpHandler, type McpTool } from "@telep/platform";
-import { checkAvailability, createDomain, getDomain, listDomains, publicDomain } from "./domains";
+import { createDomain, getDomain, listDomains, publicDomain } from "./domains";
+import { assertDomainReady, checkDomainCredentials, domainRuntime, resolveAvailability } from "./provider";
 
 const tools: McpTool[] = [
   {
+    name: "check_credentials",
+    description: "Validate OpenSRS reseller credentials with a LOOKUP of example.com. Does not register a domain. Demo mode skips OpenSRS.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    async handler(_args, ctx) {
+      if (!ctx.auth) throw new Error("API key required");
+      return checkDomainCredentials();
+    },
+  },
+  {
     name: "check_domain",
-    description: "Check whether a domain is available and its price. Read-only.",
+    description: "Check whether a domain is available and its price. Read-only. Demo mode is a local stub. test/live mode calls OpenSRS LOOKUP.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -16,13 +26,13 @@ const tools: McpTool[] = [
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
       const domain = String(args.domain ?? "").trim().toLowerCase();
-      return { domain, ...checkAvailability(args.domain) };
+      return { domain, ...(await resolveAvailability(args.domain)) };
     },
   },
   {
     name: "register_domain",
     description:
-      "Prepare a DomainSend registration draft for a domain name (1-2 year term, WHOIS privacy planned). Returns a review URL. Does not register anything — the human must review the domain, term, and price and pay. Gateway fulfillment is currently stubbed.",
+      "Prepare a DomainSend registration draft for a domain name (1-2 year term). Returns a review URL. Does not register anything — the human must review the domain, term, and price and pay.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -34,10 +44,13 @@ const tools: McpTool[] = [
     },
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
+      const runtime = domainRuntime();
+      if (runtime.mode !== "demo") assertDomainReady();
       return publicDomain(
         createDomain({
           domain: args.domain,
           years: args.years,
+          live: runtime.mode !== "demo",
           ownerKeyId: ctx.auth.keyId,
           catalogOrigin: catalogOrigin(),
         }),

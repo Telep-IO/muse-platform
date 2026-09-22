@@ -1,3 +1,4 @@
+export { checkSumvid, summarize } from "./provider";
 export { handleSumvidRest } from "./rest";
 export { handleSumvidMcp } from "./mcp";
 export { sumvidOpenApi } from "./openapi";

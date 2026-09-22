@@ -15,6 +15,7 @@ export type Fax = {
   createdAt: string;
   ownerKeyId: string;
   note: string;
+  fulfillment: "stub" | "live";
 };
 
 export const PRICE_PER_PAGE_CENTS = 99;
@@ -33,6 +34,7 @@ export function createFax(input: {
   coverPage?: unknown;
   ownerKeyId: string;
   catalogOrigin: string;
+  live?: boolean;
 }): Fax {
   const to = String(input.to ?? "").trim();
   if (!to) throw new Error("to is required");
@@ -63,7 +65,10 @@ export function createFax(input: {
     reviewUrl: `${input.catalogOrigin}/connectors/fax-send#review-${id}`,
     createdAt: new Date().toISOString(),
     ownerKeyId: input.ownerKeyId,
-    note: STUB_NOTE,
+    note: input.live
+      ? "Draft only. Nothing was transmitted. A human must review and pay before the fax provider is asked to send."
+      : STUB_NOTE,
+    fulfillment: input.live ? "live" : "stub",
   };
   faxes.set(id, fax);
   return fax;

@@ -1,5 +1,6 @@
-import { catalogOrigin, jsonError, withCors, type AuthResult } from "@telep/platform";
-import { PRICE_CENTS, createCall, demoEvent, getCall, listCalls, publicCall } from "./calls";
+import { catalogOrigin, errorResponse, jsonError, withCors, type AuthResult } from "@telep/platform";
+import { createCall, demoEvent, getCall, listCalls, publicCall } from "./calls";
+import { assertCallReady, callDescriptor, callRuntime, checkCall, quoteCall } from "./provider";
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -23,12 +24,13 @@ export async function handleCallSendRest(
         slug: "call-send",
         name: "CallSend",
         status: "planned",
-        fulfillment: "stub",
-        price: `$${(PRICE_CENTS / 100).toFixed(2)} per call`,
+        price: "$0.99 per call",
         limits: "verbatim TTS script, up to ~5 minutes",
-        note: "Create a call at POST /v1/call-send/calls. Voice provider fulfillment is not wired on this gateway yet.",
+        ...callDescriptor(),
         endpoints: {
           calls: "/v1/call-send/calls",
+          quote: "/v1/call-send/quote",
+          check: "/v1/call-send/check",
           openapi: "/v1/call-send/openapi.json",
           mcp: "/mcp/call-send",
         },
@@ -44,6 +46,20 @@ export async function handleCallSendRest(
   const needsAuth = (message = "Authorization: Bearer <key> is required") =>
     withCors(request, jsonError(401, "unauthorized", message));
 
+  if (segments[0] === "check" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    try {
+      return withCors(request, Response.json(await checkCall()));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
+  }
+
+  if (segments[0] === "quote" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    return withCors(request, Response.json(quoteCall()));
+  }
+
   if (segments[0] === "calls" && segments.length === 1 && request.method === "GET") {
     if (!auth) return needsAuth();
     return withCors(request, Response.json({ calls: listCalls(auth.keyId).map(publicCall) }));
@@ -53,6 +69,8 @@ export async function handleCallSendRest(
     if (!auth) return needsAuth();
     const body = await readJson(request);
     try {
+      const runtime = callRuntime();
+      if (runtime.mode !== "demo") assertCallReady();
       const call = createCall({
         to: String(body.to ?? ""),
         script: String(body.script ?? ""),
@@ -60,11 +78,11 @@ export async function handleCallSendRest(
         record: body.record === true,
         ownerKeyId: auth.keyId,
         catalogOrigin: catalogOrigin(),
+        live: runtime.mode !== "demo",
       });
       return withCors(request, Response.json(publicCall(call), { status: 201 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid call";
-      return withCors(request, jsonError(400, "invalid_request", message));
+      return withCors(request, errorResponse(error));
     }
   }
 

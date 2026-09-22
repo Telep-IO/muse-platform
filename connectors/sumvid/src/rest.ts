@@ -1,5 +1,6 @@
-import { jsonError, withCors, type AuthResult } from "@telep/platform";
-import { createSummary, getAccount, getSummary, listSummaries, publicSummary } from "./summaries";
+import { errorResponse, jsonError, withCors, type AuthResult } from "@telep/platform";
+import { getSummary, listSummaries, publicSummary } from "./summaries";
+import { checkSumvid, summarize, sumvidAccount, sumvidDescriptor } from "./provider";
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -23,11 +24,11 @@ export async function handleSumvidRest(
         slug: "sumvid",
         name: "Sumvid",
         status: "ready",
-        fulfillment: "stub",
-        note: "Create a stub summary at POST /v1/sumvid/summaries. No captions are fetched and no paid summarizer is called.",
+        ...sumvidDescriptor(),
         endpoints: {
           summaries: "/v1/sumvid/summaries",
           account: "/v1/sumvid/account",
+          check: "/v1/sumvid/check",
           openapi: "/v1/sumvid/openapi.json",
           mcp: "/mcp/sumvid",
         },
@@ -41,9 +42,18 @@ export async function handleSumvidRest(
     return withCors(request, Response.json(sumvidOpenApi()));
   }
 
+  if (segments[0] === "check" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
+    try {
+      return withCors(request, Response.json(await checkSumvid()));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
+  }
+
   if (segments[0] === "account" && segments.length === 1 && request.method === "GET") {
     if (!auth) return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
-    return withCors(request, Response.json(getAccount(auth.keyId)));
+    return withCors(request, Response.json(sumvidAccount(auth.keyId)));
   }
 
   if (segments[0] === "summaries" && segments.length === 1 && request.method === "GET") {
@@ -55,15 +65,14 @@ export async function handleSumvidRest(
     if (!auth) return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
     const body = await readJson(request);
     try {
-      const summary = createSummary({
+      const summary = await summarize({
         youtubeUrl: body.youtubeUrl ?? body.url,
         language: body.language,
         ownerKeyId: auth.keyId,
       });
       return withCors(request, Response.json(publicSummary(summary), { status: 201 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid summary";
-      return withCors(request, jsonError(400, "invalid_request", message));
+      return withCors(request, errorResponse(error));
     }
   }
 

@@ -1,19 +1,22 @@
 import { createMcpHandler, type McpTool } from "@telep/platform";
-import {
-  createParcel,
-  getAccount,
-  getParcel,
-  listParcels,
-  publicParcel,
-  refreshParcel,
-  setWatching,
-} from "./parcels";
+import { listParcels, publicParcel, setWatching } from "./parcels";
+import { checkShip, refreshParcelResolved, shipAccount, trackParcel } from "./provider";
 
 const tools: McpTool[] = [
   {
+    name: "check_credentials",
+    description:
+      "Validate the ShipSignal aggregator key. Does not register a tracking number. Demo mode skips the provider.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    async handler(_args, ctx) {
+      if (!ctx.auth) throw new Error("API key required");
+      return checkShip();
+    },
+  },
+  {
     name: "track_package",
     description:
-      "Create a ShipSignal stub parcel from a tracking number. The timeline is hashed from the number — no UPS, USPS, FedEx, or DHL API is called.",
+      "Track a package. Demo mode hashes a timeline and calls no carrier. test/live mode calls AfterShip, Shippo, or EasyPost. Shippo lookups are read-only. AfterShip may register the number and EasyPost may create a tracker. No postage is purchased.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -27,7 +30,7 @@ const tools: McpTool[] = [
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
       return publicParcel(
-        createParcel({
+        await trackParcel({
           trackingNumber: args.trackingNumber,
           origin: args.origin,
           destination: args.destination,
@@ -48,7 +51,7 @@ const tools: McpTool[] = [
   {
     name: "refresh_parcel",
     description:
-      "Recompute the stub timeline from the tracking-number hash. Does not contact a carrier.",
+      "Refresh a parcel. Demo mode recomputes the hash timeline. test/live mode asks the configured provider again.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -57,7 +60,7 @@ const tools: McpTool[] = [
     },
     async handler(args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
-      const parcel = refreshParcel(String(args.id), ctx.auth.keyId);
+      const parcel = await refreshParcelResolved(String(args.id), ctx.auth.keyId);
       if (!parcel) throw new Error("Parcel not found");
       return publicParcel(parcel);
     },
@@ -100,7 +103,7 @@ const tools: McpTool[] = [
     inputSchema: { type: "object", additionalProperties: false, properties: {} },
     async handler(_args, ctx) {
       if (!ctx.auth) throw new Error("API key required");
-      return getAccount(ctx.auth.keyId);
+      return shipAccount(ctx.auth.keyId);
     },
   },
 ];

@@ -1,13 +1,6 @@
-import { jsonError, withCors, type AuthResult } from "@telep/platform";
-import {
-  createParcel,
-  getAccount,
-  getParcel,
-  listParcels,
-  publicParcel,
-  refreshParcel,
-  setWatching,
-} from "./parcels";
+import { errorResponse, jsonError, withCors, type AuthResult } from "@telep/platform";
+import { getParcel, listParcels, publicParcel, setWatching } from "./parcels";
+import { checkShip, refreshParcelResolved, shipAccount, shipDescriptor, trackParcel } from "./provider";
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -35,11 +28,11 @@ export async function handleShipSignalRest(
         slug: "shipsignal",
         name: "ShipSignal",
         status: "ready",
-        fulfillment: "stub",
-        note: "Track a stub parcel at POST /v1/shipsignal/parcels. Timelines are hashed from the tracking number; no carrier API is called.",
+        ...shipDescriptor(),
         endpoints: {
           parcels: "/v1/shipsignal/parcels",
           account: "/v1/shipsignal/account",
+          check: "/v1/shipsignal/check",
           openapi: "/v1/shipsignal/openapi.json",
           mcp: "/mcp/shipsignal",
         },
@@ -60,11 +53,22 @@ export async function handleShipSignalRest(
     return withCors(request, Response.json(shipSignalOpenApi()));
   }
 
+  if (segments[0] === "check" && segments.length === 1 && request.method === "GET") {
+    if (!requireAuth(auth)) {
+      return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
+    }
+    try {
+      return withCors(request, Response.json(await checkShip()));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
+  }
+
   if (segments[0] === "account" && segments.length === 1 && request.method === "GET") {
     if (!requireAuth(auth)) {
       return withCors(request, jsonError(401, "unauthorized", "Authorization: Bearer <key> is required"));
     }
-    return withCors(request, Response.json(getAccount(auth.keyId)));
+    return withCors(request, Response.json(shipAccount(auth.keyId)));
   }
 
   if (segments[0] === "parcels" && segments.length === 1 && request.method === "GET") {
@@ -80,7 +84,7 @@ export async function handleShipSignalRest(
     }
     const body = await readJson(request);
     try {
-      const parcel = createParcel({
+      const parcel = await trackParcel({
         trackingNumber: body.trackingNumber ?? body.tracking_number,
         origin: body.origin,
         destination: body.destination,
@@ -88,8 +92,7 @@ export async function handleShipSignalRest(
       });
       return withCors(request, Response.json(publicParcel(parcel), { status: 201 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid parcel";
-      return withCors(request, jsonError(400, "invalid_request", message));
+      return withCors(request, errorResponse(error));
     }
   }
 
@@ -109,7 +112,7 @@ export async function handleShipSignalRest(
     const action = segments[2];
     let parcel;
     if (action === "refresh") {
-      parcel = refreshParcel(segments[1], auth.keyId);
+      parcel = await refreshParcelResolved(segments[1], auth.keyId);
     } else if (action === "watch") {
       parcel = setWatching(segments[1], auth.keyId, true);
     } else if (action === "unwatch") {

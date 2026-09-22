@@ -1,3 +1,4 @@
+export { checkInk } from "./provider";
 export { handleInkSendRest } from "./rest";
 export { handleInkSendMcp } from "./mcp";
 export { inkSendOpenApi } from "./openapi";

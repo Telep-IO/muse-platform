@@ -1,5 +1,6 @@
-import { catalogOrigin, jsonError, withCors, type AuthResult } from "@telep/platform";
-import { PRICE_CENTS, createLetter, demoEvent, getLetter, listLetters, publicLetter } from "./letters";
+import { catalogOrigin, errorResponse, jsonError, withCors, type AuthResult } from "@telep/platform";
+import { createLetter, demoEvent, getLetter, listLetters, publicLetter } from "./letters";
+import { assertInkReady, checkInk, inkDescriptor, inkRuntime, quoteInk } from "./provider";
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -23,12 +24,13 @@ export async function handleInkSendRest(
         slug: "ink-send",
         name: "InkSend",
         status: "planned",
-        fulfillment: "stub",
-        price: `$${(PRICE_CENTS / 100).toFixed(2)} per letter`,
+        price: "$3.99 per letter",
         limits: "cards: plain, thank-you, condolence, holiday",
-        note: "Create a letter at POST /v1/ink-send/letters. Handwritten-mail provider fulfillment is not wired on this gateway yet.",
+        ...inkDescriptor(),
         endpoints: {
           letters: "/v1/ink-send/letters",
+          quote: "/v1/ink-send/quote",
+          check: "/v1/ink-send/check",
           openapi: "/v1/ink-send/openapi.json",
           mcp: "/mcp/ink-send",
         },
@@ -44,6 +46,20 @@ export async function handleInkSendRest(
   const needsAuth = (message = "Authorization: Bearer <key> is required") =>
     withCors(request, jsonError(401, "unauthorized", message));
 
+  if (segments[0] === "check" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    try {
+      return withCors(request, Response.json(await checkInk()));
+    } catch (error) {
+      return withCors(request, errorResponse(error));
+    }
+  }
+
+  if (segments[0] === "quote" && segments.length === 1 && request.method === "GET") {
+    if (!auth) return needsAuth();
+    return withCors(request, Response.json(quoteInk()));
+  }
+
   if (segments[0] === "letters" && segments.length === 1 && request.method === "GET") {
     if (!auth) return needsAuth();
     return withCors(request, Response.json({ letters: listLetters(auth.keyId).map(publicLetter) }));
@@ -53,6 +69,8 @@ export async function handleInkSendRest(
     if (!auth) return needsAuth();
     const body = await readJson(request);
     try {
+      const runtime = inkRuntime();
+      if (runtime.mode !== "demo") assertInkReady();
       const letter = createLetter({
         message: body.message,
         to: body.to,
@@ -60,11 +78,11 @@ export async function handleInkSendRest(
         handwriting_style: body.handwriting_style,
         ownerKeyId: auth.keyId,
         catalogOrigin: catalogOrigin(),
+        live: runtime.mode !== "demo",
       });
       return withCors(request, Response.json(publicLetter(letter), { status: 201 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid letter";
-      return withCors(request, jsonError(400, "invalid_request", message));
+      return withCors(request, errorResponse(error));
     }
   }
 

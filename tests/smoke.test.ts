@@ -179,7 +179,7 @@ test("paper-send MCP tools/list and tools/call", async () => {
   );
   const listJson = (await listed.json()) as { result: { tools: { name: string }[] } };
   const names = listJson.result.tools.map((t) => t.name);
-  assert.deepEqual(names.sort(), ["create_mail_job", "get_job", "list_jobs"].sort());
+  assert.deepEqual(names.sort(), ["check_credentials", "create_mail_job", "get_job", "list_jobs"].sort());
 
   const called = await handlePaperSendMcp(
     new Request("http://localhost/mcp/paper-send", {
@@ -348,7 +348,7 @@ test("sign-send MCP tools/list and tools/call", async () => {
   );
   const listJson = (await listed.json()) as { result: { tools: { name: string }[] } };
   const names = listJson.result.tools.map((t) => t.name);
-  assert.deepEqual(names.sort(), ["create_envelope", "get_envelope", "list_envelopes"].sort());
+  assert.deepEqual(names.sort(), ["check_credentials", "create_envelope", "get_envelope", "list_envelopes"].sort());
 
   const called = await handleSignSendMcp(
     new Request("http://localhost/mcp/sign-send", {
@@ -430,7 +430,7 @@ test("fax-send lifecycle: draft -> paid -> sending -> delivered", async () => {
     }),
   );
   const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
-  assert.deepEqual(names.sort(), ["create_fax", "get_fax", "list_faxes"].sort());
+  assert.deepEqual(names.sort(), ["check_credentials", "create_fax", "get_fax", "list_faxes"].sort());
 });
 
 test("call-send lifecycle: draft -> paid -> queued -> completed", async () => {
@@ -486,7 +486,7 @@ test("call-send lifecycle: draft -> paid -> queued -> completed", async () => {
     }),
   );
   const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
-  assert.deepEqual(names.sort(), ["create_call", "get_call", "list_calls"].sort());
+  assert.deepEqual(names.sort(), ["check_credentials", "create_call", "get_call", "list_calls"].sort());
 });
 
 test("ink-send lifecycle: draft -> paid -> sent", async () => {
@@ -533,7 +533,7 @@ test("ink-send lifecycle: draft -> paid -> sent", async () => {
     }),
   );
   const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
-  assert.deepEqual(names.sort(), ["create_letter", "get_letter", "list_letters"].sort());
+  assert.deepEqual(names.sort(), ["check_credentials", "create_letter", "get_letter", "list_letters"].sort());
 });
 
 test("domain-send check + registration lifecycle", async () => {
@@ -602,7 +602,7 @@ test("domain-send check + registration lifecycle", async () => {
     }),
   );
   const names = ((await tools.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name);
-  assert.deepEqual(names.sort(), ["check_domain", "register_domain", "get_domain", "list_domains"].sort());
+  assert.deepEqual(names.sort(), ["check_credentials", "check_domain", "get_domain", "list_domains", "register_domain"].sort());
 });
 
 const authHeaders = {
@@ -699,7 +699,7 @@ test("sumvid MCP initialize, tools/list, and tools/call", async () => {
   );
   const listJson = (await listed.json()) as { result: { tools: { name: string }[] } };
   const names = listJson.result.tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ["get_account", "get_summary", "summarize_youtube"]);
+  assert.deepEqual(names, ["check_credentials", "get_account", "get_summary", "summarize_youtube"]);
 
   const called = await handleSumvidMcp(
     new Request("http://localhost/mcp/sumvid", {
@@ -820,6 +820,7 @@ test("shipsignal MCP initialize, tools/list, and tools/call", async () => {
   const listJson = (await listed.json()) as { result: { tools: { name: string }[] } };
   const names = listJson.result.tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
+    "check_credentials",
     "get_account",
     "list_parcels",
     "refresh_parcel",

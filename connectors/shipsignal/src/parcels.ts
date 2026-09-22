@@ -11,7 +11,7 @@ export type ParcelEvent = {
 
 export type Parcel = {
   id: string;
-  status: "stubbed";
+  status: "stubbed" | "tracked";
   trackingNumber: string;
   carrierGuess: CarrierGuess;
   mockPhase: MockPhase;
@@ -23,7 +23,7 @@ export type Parcel = {
   updatedAt: string;
   ownerKeyId: string;
   note: string;
-  fulfillment: "stub";
+  fulfillment: "stub" | "live";
 };
 
 export const STUB_NOTE =
@@ -180,6 +180,10 @@ export function getAccount(ownerKeyId: string) {
 export function publicParcel(parcel: Parcel): Omit<Parcel, "ownerKeyId"> {
   const { ownerKeyId: _omit, ...rest } = parcel;
   return rest;
+}
+
+export function forgetParcel(id: string): void {
+  parcels.delete(id);
 }
 
 /** Test helper — not used by production routes. */
