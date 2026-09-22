@@ -12,7 +12,7 @@ export const connectors: Connector[] = [
     status: "submitted",
     category: "physical-mail",
     pricingBlurb: "$4.99 first page, $0.25 each additional page. US letter, 1–5 pages.",
-    repoUrl: "https://github.com/Telep-IO/paper-send",
+    repoUrl: "https://github.com/Telep-IO/muse-platform/tree/main/services/paper-send",
     docsPath: "/docs#paper-send",
     apiBasePath: "/v1/paper-send",
     mcpPath: "/mcp/paper-send",

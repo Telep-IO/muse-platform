@@ -16,7 +16,7 @@ One Next.js App Router app, with connector modules kept separate so the path to 
 app/                    Catalog pages + gateway route handlers (Vercel)
 packages/registry/      Typed connector catalog (source of truth)
 packages/platform/      Auth, CORS, errors, rate-limit stub, OpenAPI merge, Stripe helpers, MCP HTTP
-connectors/paper-send/  Callable MCP + REST stub (live mail stays in Telep-IO/paper-send)
+connectors/paper-send/  Callable MCP + REST stub (Express app is services/paper-send)
 connectors/sumvid/      YouTube summarize stub (REST + MCP + OpenAPI)
 connectors/shipsignal/  Package tracking stub (REST + MCP + OpenAPI)
 connectors/*-send/      Sign/fax/call/ink/domain MCP + REST stubs
@@ -25,9 +25,9 @@ lib/gateway.ts          Dispatch: slug → connector module
 middleware.ts           api.* host rewrites `/` → `/v1`
 ```
 
-`services/` holds the Express fulfillment apps formerly published as standalone repos (`call-send`, `domain-send`, `fax-send`, `ink-send`, `sign-send`). Each keeps its own `package.json` and lockfile. They are not npm workspaces and the Next.js app does not import them. See [services/README.md](services/README.md).
+`services/` holds the Express fulfillment apps formerly published as standalone repos (`call-send`, `domain-send`, `fax-send`, `ink-send`, `paper-send`, `sign-send`). Each keeps its own `package.json` and lockfile. They are not npm workspaces and the Next.js app does not import them. PaperSend is the furthest along and is the one that ships a Dockerfile and compose files. Moving it under `services/paper-send` changes the code location only; where it is deployed does not change. See [services/README.md](services/README.md).
 
-PaperSend's live print-and-mail app stays at [Telep-IO/paper-send](https://github.com/Telep-IO/paper-send). The legacy Vite frontend [Telep-IO/api-gateway-app](https://github.com/Telep-IO/api-gateway-app) is not this gateway.
+The legacy Vite frontend [Telep-IO/api-gateway-app](https://github.com/Telep-IO/api-gateway-app) is not this gateway.
 
 Production is two hostnames, one Vercel project. Preview and local are one host: `/` is the catalog; `/v1`, `/mcp`, and `/health` are the gateway.
 
