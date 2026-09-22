@@ -1,5 +1,3 @@
 export { checkShip, trackParcel } from "./provider";
-export { handleShipSignalRest } from "./rest";
-export { handleShipSignalMcp, shipSignalTools } from "./mcp";
-export { shipSignalOpenApi } from "./openapi";
+export { handleShipSignalRest, handleShipSignalMcp, shipSignalTools, shipSignalOpenApi } from "./connector";
 export { resetParcels, STUB_NOTE } from "./parcels";

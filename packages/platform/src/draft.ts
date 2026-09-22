@@ -3,6 +3,7 @@ import { catalogOrigin } from "./hosts";
 import { errorResponse, jsonError } from "./errors";
 import { withCors } from "./cors";
 import type { OpenApiDocument } from "./openapi";
+import { createCheckoutSession } from "./stripe";
 
 export async function readJson(request: Request): Promise<Record<string, unknown>> {
   try {
@@ -22,16 +23,29 @@ function send(request: Request, body: unknown, status = 200): Response {
 
 type Payable = { id: string; status: string; amountCents: number; currency: string };
 
-function stubCheckout(request: Request, slug: string, label: string, noun: string, item: Payable | undefined, missing: string): Response {
+async function paidCheckout(request: Request, slug: string, label: string, noun: string, item: Payable | undefined, missing: string): Promise<Response> {
   if (!item) return withCors(request, jsonError(404, "not_found", missing));
   if (item.status !== "draft") {
     return withCors(request, jsonError(409, "conflict", `${label} is ${item.status}, checkout only from draft`));
   }
-  return send(request, {
-    checkoutUrl: `${catalogOrigin()}/connectors/${slug}#checkout-${item.id}`,
+  const page = `${catalogOrigin()}/connectors/${slug}#checkout-${item.id}`;
+  const session = await createCheckoutSession({
+    connectorSlug: slug,
+    jobId: item.id,
     amountCents: item.amountCents,
     currency: item.currency,
-    note: `Stub checkout: no payment is collected on the gateway. In production this returns a Stripe Checkout session; the ${noun} moves to paid only after the billing webhook confirms payment.`,
+    successUrl: page,
+    cancelUrl: `${catalogOrigin()}/connectors/${slug}`,
+    description: `${label} ${item.id}`,
+  });
+  const live = session.mode === "live";
+  return send(request, {
+    checkoutUrl: live ? session.url : page,
+    amountCents: item.amountCents,
+    currency: item.currency,
+    note: live
+      ? `Stripe Checkout session ${session.id}. The ${noun} moves to paid only after the billing webhook confirms payment.`
+      : `Stub checkout: no payment is collected on the gateway. In production this returns a Stripe Checkout session; the ${noun} moves to paid only after the billing webhook confirms payment.`,
   });
 }
 
@@ -112,7 +126,7 @@ export function draftRest<T>(opts: {
         const known = (action === "checkout" && col.checkout) || (action === "demo-event" && col.demoEvent) || Boolean(col.actions?.[action]);
         if (known && !auth) return unauthorized(request);
         if (known && auth && action === "checkout" && col.checkout) {
-          return stubCheckout(request, opts.slug, col.checkout.label, col.checkout.noun, col.get(segments[1], auth.keyId) as Payable | undefined, col.missing);
+          return paidCheckout(request, opts.slug, col.checkout.label, col.checkout.noun, col.get(segments[1], auth.keyId) as Payable | undefined, col.missing);
         }
         if (known && auth && action === "demo-event" && col.demoEvent) {
           const body = await readJson(request);

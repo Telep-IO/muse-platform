@@ -1,5 +1,3 @@
 export { checkCall } from "./provider";
-export { handleCallSendRest } from "./rest";
-export { callSendTools, handleCallSendMcp } from "./mcp";
-export { callSendOpenApi } from "./openapi";
+export { handleCallSendRest, callSendTools, handleCallSendMcp, callSendOpenApi } from "./connector";
 export { resetCalls } from "./calls";

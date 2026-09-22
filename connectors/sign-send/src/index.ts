@@ -1,5 +1,3 @@
 export { checkSign } from "./provider";
-export { handleSignSendRest } from "./rest";
-export { handleSignSendMcp, signSendTools } from "./mcp";
-export { signSendOpenApi } from "./openapi";
+export { handleSignSendRest, handleSignSendMcp, signSendTools, signSendOpenApi } from "./connector";
 export { resetEnvelopes } from "./envelopes";
