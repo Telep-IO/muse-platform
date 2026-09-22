@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CallSend — review your call</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+  .script { background: #f6f6f6; border: 1px solid #ccc; padding: 1rem; white-space: pre-wrap; margin: 1rem 0; }
+  .warn { background: #fff3cd; border: 1px solid #e6c200; padding: 1rem; margin: 1rem 0; }
+  button { font-size: 1.1rem; padding: .75rem 1.5rem; }
+  #status { white-space: pre-wrap; background: #f6f6f6; padding: 1rem; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>Review your call</h1>
+<p id="loading">Loading… (open this page from your private review link)</p>
+<div id="review" hidden>
+  <p><strong>To:</strong> <span id="to"></span></p>
+  <p><strong>Voice:</strong> <span id="voice"></span></p>
+  <p><strong>Recording:</strong> <span id="record"></span></p>
+  <p><strong>Price:</strong> <span id="price"></span> — flat per call, charged once, only after you confirm and pay.</p>
+  <p><strong>Exactly what will be spoken</strong> (after a short automated-call disclosure):</p>
+  <div class="script" id="script"></div>
+  <p id="window"></p>
+  <div class="warn">
+    <label><input type="checkbox" id="confirm">
+      <span id="confirmation"></span></label>
+  </div>
+  <p><a id="terms" href="#">Terms</a> · <a id="privacy" href="#">Privacy Notice</a></p>
+  <button id="pay" disabled>Continue to payment</button>
+  <div id="status"></div>
+</div>
+<script>
+const match = location.hash.match(/#call=([0-9a-f-]+)\.([0-9a-f]+)/);
+const $ = id => document.getElementById(id);
+const say = t => { $('status').textContent = t; };
+const CONFIRMATION = 'I have reviewed the destination phone number, the exact script that will be spoken, the voice, and the price. I have the rights and authorizations needed to place this call, including any consent required from the recipient. I agree to the Terms and acknowledge the Privacy Notice. I authorize the call to be placed automatically after successful payment; once placed, the call cannot be recalled.';
+if (!match) { $('loading').textContent = 'This page needs your private review link.'; }
+else {
+  const [, id, token] = match;
+  const auth = { 'Authorization': 'Bearer ' + token };
+  const call = await fetch(`/api/calls/${id}`, { headers: auth }).then(r => r.json());
+  if (call.error) { $('loading').textContent = call.error; }
+  else {
+    $('loading').hidden = true; $('review').hidden = false;
+    $('to').textContent = call.phone_number;
+    $('voice').textContent = call.voice;
+    $('record').textContent = call.record ? 'yes — you will get a recording link' : 'no';
+    $('price').textContent = `$${(call.amount_cents / 100).toFixed(2)}`;
+    // textContent, never innerHTML: the script is user-supplied text.
+    $('script').textContent = call.script || '(script no longer stored — see your confirmation receipt)';
+    $('window').textContent = 'Calling window: 08:00–21:00 recipient-local time (best-effort check).';
+    $('terms').href = `/policies/terms/${call.terms_version}`;
+    $('privacy').href = `/policies/privacy/${call.privacy_version}`;
+    $('confirmation').textContent = CONFIRMATION;
+    $('confirm').addEventListener('change', e => { $('pay').disabled = !e.target.checked; });
+    $('pay').addEventListener('click', async () => {
+      say('Starting checkout…');
+      const res = await fetch(`/api/calls/${id}/checkout`, {
+        method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmed: true, review_hash: call.review_hash,
+          terms_version: call.terms_version, privacy_version: call.privacy_version,
+          confirmation: CONFIRMATION }),
+      }).then(r => r.json());
+      if (res.error) { say('Checkout failed: ' + res.error); return; }
+      say('Opening payment…');
+      location.href = res.checkout_url;
+    });
+    // Poll status so the reviewer sees progress after returning from payment.
+    const poll = async () => {
+      const s = await fetch(`/api/calls/${id}`, { headers: auth }).then(r => r.json());
+      if (!s.error) say(`state: ${s.state}${s.provider_status ? ' (provider: ' + s.provider_status + ')' : ''}${s.duration_seconds != null ? ' · ' + s.duration_seconds + 's' : ''}${s.recording_url ? '\nrecording: ' + s.recording_url : ''}`);
+      if (!['completed', 'no-answer', 'failed', 'refunded'].includes(s.state)) setTimeout(poll, 5000);
+    };
+    if (new URLSearchParams(location.hash.split('&').slice(1).join('&')).get('demo_paid') || call.state !== 'draft') poll();
+  }
+}
+</script>
+</body>
+</html>
