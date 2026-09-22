@@ -1,0 +1,21 @@
+:root { color-scheme: light; }
+body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f7f7f8; color: #1a1a1a; }
+main { max-width: 640px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+h1 { margin-bottom: 0.25rem; }
+.tagline { color: #555; margin-top: 0; }
+section { background: #fff; border: 1px solid #e3e3e6; border-radius: 10px; padding: 1.25rem; margin-top: 1.25rem; }
+h2 { margin-top: 0; font-size: 1.1rem; }
+label { display: block; margin: 0.75rem 0; font-size: 0.95rem; }
+input[type="text"], input[type="email"], select { display: block; width: 100%; margin-top: 0.25rem; padding: 0.55rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+input[readonly] { background: #f0f0f2; }
+button { padding: 0.6rem 1.2rem; font-size: 1rem; border: 0; border-radius: 6px; background: #1a1a1a; color: #fff; cursor: pointer; margin-top: 0.5rem; }
+button:hover { background: #333; }
+.hint { font-size: 0.85rem; color: #666; }
+.result { margin-top: 0.75rem; padding: 0.75rem; background: #f0f0f2; border-radius: 6px; }
+.error { margin-top: 0.75rem; padding: 0.75rem; background: #fdecec; color: #a33; border-radius: 6px; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 1rem; }
+dt { font-weight: 600; color: #555; }
+dd { margin: 0; overflow-wrap: anywhere; }
+.confirm { display: flex; gap: 0.5rem; align-items: flex-start; }
+.confirm input { margin-top: 0.2rem; }
+.confirm span { font-size: 0.85rem; color: #444; }
