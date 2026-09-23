@@ -23,7 +23,15 @@ function send(request: Request, body: unknown, status = 200): Response {
 
 type Payable = { id: string; status: string; amountCents: number; currency: string };
 
-async function paidCheckout(request: Request, slug: string, label: string, noun: string, item: Payable | undefined, missing: string): Promise<Response> {
+async function paidCheckout(
+  request: Request,
+  slug: string,
+  label: string,
+  noun: string,
+  item: Payable | undefined,
+  missing: string,
+  onCheckout?: (session: { id: string; mode: "live" | "stub" }) => Promise<void> | void,
+): Promise<Response> {
   if (!item) return withCors(request, jsonError(404, "not_found", missing));
   if (item.status !== "draft") {
     return withCors(request, jsonError(409, "conflict", `${label} is ${item.status}, checkout only from draft`));
@@ -38,6 +46,11 @@ async function paidCheckout(request: Request, slug: string, label: string, noun:
     cancelUrl: `${catalogOrigin()}/connectors/${slug}`,
     description: `${label} ${item.id}`,
   });
+  try {
+    await onCheckout?.({ id: session.id, mode: session.mode });
+  } catch (error) {
+    return withCors(request, errorResponse(error));
+  }
   const live = session.mode === "live";
   return send(request, {
     checkoutUrl: live ? session.url : page,
@@ -53,11 +66,12 @@ type Collection<T> = {
   name: string;
   listKey: string;
   missing: string;
-  list: (ownerKeyId: string) => T[];
-  get: (id: string, ownerKeyId: string) => T | undefined;
+  list: (ownerKeyId: string) => T[] | Promise<T[]>;
+  get: (id: string, ownerKeyId: string) => T | undefined | Promise<T | undefined>;
   present: (item: T) => unknown;
   create?: (body: Record<string, unknown>, auth: AuthResult) => Promise<T> | T;
   checkout?: { label: string; noun: string };
+  onCheckout?: (id: string, ownerKeyId: string, session: { id: string; mode: "live" | "stub" }) => Promise<void> | void;
   demoEvent?: (id: string, ownerKeyId: string, event: string, body: Record<string, unknown>) => T | Promise<T>;
   actions?: Record<string, (id: string, auth: AuthResult) => Promise<T | undefined> | T | undefined>;
 };
@@ -104,7 +118,8 @@ export function draftRest<T>(opts: {
     if (col && segments[0] === col.name) {
       if (segments.length === 1 && request.method === "GET") {
         if (!auth) return unauthorized(request);
-        return send(request, { [col.listKey]: col.list(auth.keyId).map(col.present) });
+        const items = await col.list(auth.keyId);
+        return send(request, { [col.listKey]: items.map(col.present) });
       }
       if (segments.length === 1 && request.method === "POST" && col.create) {
         if (!auth) return unauthorized(request);
@@ -117,7 +132,7 @@ export function draftRest<T>(opts: {
       }
       if (segments.length === 2 && request.method === "GET") {
         if (!auth) return unauthorized(request);
-        const item = col.get(segments[1], auth.keyId);
+        const item = await col.get(segments[1], auth.keyId);
         if (!item) return withCors(request, jsonError(404, "not_found", col.missing));
         return send(request, col.present(item));
       }
@@ -126,7 +141,10 @@ export function draftRest<T>(opts: {
         const known = (action === "checkout" && col.checkout) || (action === "demo-event" && col.demoEvent) || Boolean(col.actions?.[action]);
         if (known && !auth) return unauthorized(request);
         if (known && auth && action === "checkout" && col.checkout) {
-          return paidCheckout(request, opts.slug, col.checkout.label, col.checkout.noun, col.get(segments[1], auth.keyId) as Payable | undefined, col.missing);
+          const item = (await col.get(segments[1], auth.keyId)) as Payable | undefined;
+          return paidCheckout(request, opts.slug, col.checkout.label, col.checkout.noun, item, col.missing, (session) =>
+            col.onCheckout?.(segments[1], auth.keyId, session),
+          );
         }
         if (known && auth && action === "demo-event" && col.demoEvent) {
           const body = await readJson(request);

@@ -94,17 +94,22 @@ test("paper check verifies Lob with a read-only address list and refuses a live 
   assert.ok(auth.startsWith("Basic "));
   assert.equal(auth.includes("test_example"), false);
 
-  const job = createJob({
-    sender: { name: "A", address_line1: "1", address_city: "C", address_state: "OH", address_zip: "44113" },
-    recipient: { name: "B", address_line1: "2", address_city: "C", address_state: "OH", address_zip: "44114" },
-    ownerKeyId: "k",
-    catalogOrigin: "http://localhost:3000",
-    live: true,
-  });
-  assert.equal(job.status, "draft");
-  assert.equal(job.fulfillment, "live");
-  assert.equal(job.note.includes("hashed"), false);
-  assert.equal(job.note.includes("not asked to print"), true);
+  await assert.rejects(
+    () =>
+      createJob({
+        sender: { name: "A", address_line1: "1", address_city: "C", address_state: "OH", address_zip: "44113" },
+        recipient: { name: "B", address_line1: "2", address_city: "C", address_state: "OH", address_zip: "44114" },
+        ownerKeyId: "k",
+        catalogOrigin: "http://localhost:3000",
+        live: true,
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof HttpError);
+      assert.equal(error.code, "database_required");
+      assert.equal(error.message, "DATABASE_URL required");
+      return true;
+    },
+  );
 });
 
 test("sumvid summarize uses the API and surfaces insufficient credits", async () => {

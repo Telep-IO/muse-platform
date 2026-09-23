@@ -8,6 +8,7 @@
     "./edge": "./src/edge.ts"
   },
   "dependencies": {
+    "pg": "^8.16.3",
     "stripe": "^18.5.0"
   }
 }

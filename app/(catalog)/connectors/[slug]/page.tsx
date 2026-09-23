@@ -53,7 +53,9 @@ export default async function ConnectorPage({ params }: { params: Promise<{ slug
           <dd>
             <code>{apiUrl(connector.apiBasePath)}</code>
             {connector.gatewayImplemented
-              ? " — live on this gateway (callable stub)"
+              ? connector.slug === "paper-send"
+                ? " — live on this gateway (demo is a stub; test/live mails after payment)"
+                : " — live on this gateway (callable stub)"
               : " — not served on this gateway yet"}
           </dd>
           <dt>MCP</dt>

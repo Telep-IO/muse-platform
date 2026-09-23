@@ -14,6 +14,15 @@ export function envValue(name: string, env: Env = process.env): string {
   return (env[name] ?? "").trim();
 }
 
+/** First non-empty env name. Callers pass the connector URL, then shared `DATABASE_URL`. */
+export function databaseUrl(env: Env, names: string[]): string {
+  for (const name of names) {
+    const value = envValue(name, env);
+    if (value) return value;
+  }
+  return "";
+}
+
 export function requireCredentials(mode: AppMode, modeName: string, checks: { name: string; value: string }[]): void {
   if (mode === "demo") return;
   const missing = checks.filter((check) => !check.value).map((check) => check.name);

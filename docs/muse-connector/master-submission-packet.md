@@ -74,7 +74,7 @@ Keep `Bearer <redacted>` in this packet. Public privacy/terms pages say “Beare
 | Connector icon | `docs/muse-connector/icons/paper-send.png` (upload) |
 | Your privacy policy | https://muse.telep.io/connectors/paper-send/privacy |
 | Your terms of service | https://muse.telep.io/connectors/paper-send/terms |
-| Anything else? | Demo gateway: creating a job does not print, mail, or charge anything. Jobs are created with status `stubbed`. Live print still lives in the separate PaperSend app. REST: https://api.muse.telep.io/v1/paper-send (OpenAPI at …/v1/paper-send/openapi.json). |
+| Anything else? | Default mode is a demo stub: jobs are status `stubbed`, in memory, and Lob is not called. With Postgres, Stripe, and a Lob key, `PAPER_SEND_APP_MODE=test` or `live` stores a durable draft and asks Lob to send only after the Stripe webhook confirms payment. The gateway does not store PDF bytes. REST: https://api.muse.telep.io/v1/paper-send (OpenAPI at …/v1/paper-send/openapi.json). |
 | Connection type | Existing MCP |
 | Hosted MCP endpoint | https://api.muse.telep.io/mcp/paper-send |
 | Access requirements | Global text above, plus: Planned pricing $4.99 first page + $0.25 each additional page, US Letter 1–5 pages. Gateway jobs are stubs until the mail provider is wired. |
@@ -202,4 +202,4 @@ Keep `Bearer <redacted>` in this packet. Public privacy/terms pages say “Beare
 
 ## Honest readiness note
 
-All 8 MCP endpoints are implemented on this gateway (`gatewayImplemented: true`). The five *-send connectors plus PaperSend are **honest demo stubs** (no provider fulfillment wired yet); Sumvid/ShipSignal are demo stubs too. Meta performs functional + end-to-end testing, so approval is not guaranteed on stub status — the packets disclose this everywhere rather than hiding it. That was a deliberate call: start the review clock with full disclosure, wire providers as keys land.
+All 8 MCP endpoints are implemented on this gateway (`gatewayImplemented: true`). The default mode for every connector is an honest demo stub. PaperSend is the exception once secrets are set: `test`/`live` plus a paid Stripe webhook asks Lob to send. The other *-send connectors, Sumvid, and ShipSignal stay demo stubs until their own providers are wired. Meta performs functional + end-to-end testing, so approval is not guaranteed — the packets disclose demo vs paid behavior rather than hiding it.

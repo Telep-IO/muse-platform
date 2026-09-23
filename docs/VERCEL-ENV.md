@@ -4,11 +4,42 @@ One Vercel project deploys this Next.js app (catalog + gateway). Apps under `ser
 
 Jonathan: paste the names below into **Vercel → Project → Settings → Environment Variables**. Values in git stay empty. Fill secrets in the dashboard, then **Redeploy**. A running deployment does not pick up env edits, including `NEXT_PUBLIC_*` which are baked in at build time.
 
-`*_APP_MODE` defaults to `demo` (in-memory stub, no provider HTTP). Set a connector to `test` to smoke sandbox keys tonight. `live` uses live provider hosts (OpenSRS production, Lob `live_` keys). Prefer `test` until a sandbox check is green.
+`*_APP_MODE` defaults to `demo` (in-memory stub, no provider HTTP). Set a connector to `test` to smoke sandbox keys. `live` uses live provider hosts (OpenSRS production, Lob `live_` keys). Prefer `test` until a sandbox check is green.
 
-The gateway calls providers **inside this Next.js app**. It does not need a separate Express deploy for these checks. `*_SERVICE_URL` is stored for a later proxy and is not called.
+The gateway calls providers **inside this Next.js app**. It does not need a separate Express deploy. `*_SERVICE_URL` is not called for PaperSend paid send.
 
-These routes do **not** create Lob letters, place Twilio calls, transmit faxes, order Handwrytten cards, send signature requests, or register domains. They can still spend in two places: Sumvid `POST /summaries` uses credits, and AfterShip/EasyPost tracking may count against a plan. Shippo tracking lookups are read-only.
+**PaperSend** is the paid-send path. Demo never calls Lob. With Postgres + Stripe + a Lob key, `PAPER_SEND_APP_MODE=test` or `live`, a verified `checkout.session.completed` webhook asks Lob to create the letter. The gateway does not store PDF bytes; Lob receives HTML built from the filename and page count. Other connectors still do not place calls, transmit faxes, order Handwrytten cards, send signature requests, or register domains. Sumvid `POST /summaries` uses credits, and AfterShip/EasyPost tracking may count against a plan. Shippo tracking lookups are read-only.
+
+## Jonathan tomorrow — PaperSend real paid send
+
+Do this in **test** first. Do **not** set `PAPER_SEND_APP_MODE=live`, paste a `live_` Lob key, or paste a Stripe `sk_live_` secret until a test-mode smoke has produced a Lob test letter id (`ltr_…`) and the job status is `submitted`.
+
+Paste these in **Vercel → Project → Settings → Environment Variables → Production**. Values stay out of git. Then **Redeploy**. A running deployment does not pick up env edits.
+
+| Name | What to paste |
+| --- | --- |
+| `NEXT_PUBLIC_CATALOG_URL` | `https://muse.telep.io` |
+| `NEXT_PUBLIC_API_URL` | `https://api.muse.telep.io` |
+| `MUSE_API_KEYS` | Comma-separated `muse_sk_test_…` / `muse_sk_live_…` keys. Not `muse_sk_demo_localdev`. |
+| `DATABASE_URL` or `PAPER_SEND_DATABASE_URL` | Neon pooled connection string. Either name is enough; `PAPER_SEND_DATABASE_URL` wins if both are set. |
+| `STRIPE_SECRET_KEY` | Stripe **test** secret (`sk_test_…`) for the smoke. |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret (`whsec_…`) for the test-mode endpoint below. |
+| `PAPER_SEND_LOB_API_KEY` | Lob **test** key (`test_…`). A `live_` key is rejected while mode is `test`. |
+| `PAPER_SEND_APP_MODE` | `test` for the smoke, in the same save as the test Lob key and test Stripe key. Not `live`. |
+
+`PAPER_SEND_LOB_AUTHORIZATION_REFERENCE` is for the optional Express app. The gateway does not read it to send.
+
+Stripe Dashboard clicks (test mode toggle on):
+
+1. Developers → Webhooks → Add endpoint.
+2. Endpoint URL: `https://api.muse.telep.io/v1/billing/webhook`
+3. Events: `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+4. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
+5. Redeploy again if that secret was saved after the last deploy.
+
+Smoke: `GET /v1/paper-send/check` (Lob auth only, no letter), create a draft, `POST /v1/paper-send/jobs/{id}/checkout`, pay with Stripe’s test card, then `GET` the job. Status `submitted` and a `lobId` starting with `ltr_` means Lob accepted it. Status `paid` with a note that Lob was not called means it did **not** send — do not treat that as success.
+
+Only after that smoke is green: Stripe **live** mode webhook (same URL, new signing secret), `sk_live_…`, Lob `live_…`, then `PAPER_SEND_APP_MODE=live`, then Redeploy. Test and live Stripe webhooks are different endpoints and different secrets.
 
 ## Production
 
@@ -21,8 +52,8 @@ Set **Production**. Use the same names on **Preview** only if a preview deployme
 | `NEXT_PUBLIC_CATALOG_URL` | `https://muse.telep.io` |
 | `NEXT_PUBLIC_API_URL` | `https://api.muse.telep.io` |
 | `MUSE_API_KEYS` | Comma-separated `muse_sk_{demo\|test\|live}_{token}`. Do not reuse `muse_sk_demo_localdev`. |
-| `STRIPE_SECRET_KEY` | Empty until checkout should leave stub mode. Stripe test key until a connector charges. |
-| `STRIPE_WEBHOOK_SECRET` | Empty until `/v1/billing/webhook` should verify. Pair with the key above. |
+| `STRIPE_SECRET_KEY` | Empty keeps checkout in stub mode. PaperSend paid send needs a Stripe test secret until the smoke is green, then a live secret. |
+| `STRIPE_WEBHOOK_SECRET` | Empty skips verification and does not fulfill. PaperSend needs the signing secret for `https://api.muse.telep.io/v1/billing/webhook`. |
 | `STRIPE_SUCCESS_URL` | `https://muse.telep.io/docs` (or the post-checkout path you want) |
 | `STRIPE_CANCEL_URL` | `https://muse.telep.io/docs` |
 | `SUPPORT_EMAIL` | Operator support address. Empty until live mode on an Express app. |
@@ -38,15 +69,15 @@ Optional shared Stripe Tax flags, read by the PaperSend, SignSend, and DomainSen
 
 ### PaperSend
 
-Maps to `services/paper-send/.env.example` (`APP_MODE`, `LOB_API_KEY`, `LOB_AUTHORIZATION_REFERENCE`, `DATABASE_URL`).
+Paid send uses these on the Next.js gateway. The Express app in `services/paper-send` is not required. Its unprefixed names are `APP_MODE`, `LOB_API_KEY`, `LOB_AUTHORIZATION_REFERENCE`, and `DATABASE_URL` if you run it separately.
 
-| Vercel name | Express name |
+| Vercel name | Role |
 | --- | --- |
-| `PAPER_SEND_APP_MODE` | `APP_MODE` — `demo` by default; `test` for a Lob `test_` key |
-| `PAPER_SEND_LOB_API_KEY` | `LOB_API_KEY` |
-| `PAPER_SEND_LOB_AUTHORIZATION_REFERENCE` | `LOB_AUTHORIZATION_REFERENCE` |
-| `PAPER_SEND_DATABASE_URL` | `DATABASE_URL` (optional on Vercel; required on the Express deploy) |
-| `PAPER_SEND_SERVICE_URL` | optional proxy base URL; no Express equivalent |
+| `PAPER_SEND_APP_MODE` | `demo` (default, no Lob). `test` uses a Lob `test_` key. `live` uses a Lob `live_` key and is only for after a green test smoke. |
+| `PAPER_SEND_LOB_API_KEY` | Lob secret. Prefix must match the mode. Empty: `/check` fails in test/live; creating a draft still works; fulfill does not pretend success. |
+| `PAPER_SEND_LOB_AUTHORIZATION_REFERENCE` | Express-only reminder of Lob’s written authorization. The gateway does not read it. |
+| `PAPER_SEND_DATABASE_URL` | Postgres (Neon pooled URL). Required for test/live, else the API returns `DATABASE_URL required`. `DATABASE_URL` is the shared fallback. |
+| `PAPER_SEND_SERVICE_URL` | Unused by the in-gateway paid send. |
 
 ### Sumvid
 
@@ -163,7 +194,8 @@ auth=( -H "Authorization: Bearer $MUSE_KEY" -H "Content-Type: application/json" 
 | --- | --- | --- | --- |
 | PaperSend check | `curl -sS "${auth[@]}" $BASE/v1/paper-send/check` | Lob `GET /v1/addresses?limit=1`. Stripe balance only if `STRIPE_SECRET_KEY` is set. | None. Does not create a letter. |
 | PaperSend quote | `curl -sS "${auth[@]}" "$BASE/v1/paper-send/quote?pages=2"` | Local $4.99 + $0.25 math. | None. |
-| PaperSend draft | `curl -sS "${auth[@]}" -d '{"sender":{"name":"A","address_line1":"1 Main","address_city":"Cleveland","address_state":"OH","address_zip":"44113"},"recipient":{"name":"B","address_line1":"2 Main","address_city":"Cleveland","address_state":"OH","address_zip":"44114"},"document":{"pages":1}}' $BASE/v1/paper-send/jobs` | Stores a draft. | None. A human must review before any mail. Live Lob keys are rejected when mode is `test`. |
+| PaperSend draft | `curl -sS "${auth[@]}" -d '{"sender":{"name":"A","address_line1":"1 Main","address_city":"Cleveland","address_state":"OH","address_zip":"44113"},"recipient":{"name":"B","address_line1":"2 Main","address_city":"Cleveland","address_state":"OH","address_zip":"44114"},"document":{"pages":1}}' $BASE/v1/paper-send/jobs` | Stores a draft. Demo is in-memory. test/live needs Postgres and still does not mail. | None. |
+| PaperSend checkout | `curl -sS "${auth[@]}" -X POST $BASE/v1/paper-send/jobs/{id}/checkout` | Stripe Checkout when `STRIPE_SECRET_KEY` is set; otherwise a stub URL. | Charges the card only on a real Stripe session. Lob runs later, from the webhook. |
 | Sumvid check | `curl -sS "${auth[@]}" $BASE/v1/sumvid/check` | `GET {SUMVID_API_BASE_URL}/v1/account`. | None. |
 | Sumvid summarize | `curl -sS "${auth[@]}" -d '{"youtubeUrl":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"}' $BASE/v1/sumvid/summaries` | Real summarize. `402` body includes `error.code=insufficient_credits` and `error.topUpUrl` when Sumvid sends them. | **Spends Sumvid credits.** |
 | ShipSignal check | `curl -sS "${auth[@]}" $BASE/v1/shipsignal/check` | Auth only (AfterShip couriers, Shippo carrier accounts, or EasyPost tracker list). | None. |
@@ -178,6 +210,6 @@ auth=( -H "Authorization: Bearer $MUSE_KEY" -H "Content-Type: application/json" 
 | DomainSend availability | `curl -sS "${auth[@]}" -d '{"domain":"example.com"}' $BASE/v1/domain-send/domains/check` | OpenSRS LOOKUP in `test`/`live`. Demo uses the local stub (`taken-` prefix). | None. |
 | MCP | `curl -sS "${auth[@]}" -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"check_credentials","arguments":{}}}' $BASE/mcp/paper-send` | Same checks via MCP. Tool name `check_credentials` was added. Existing tool names are unchanged. | Same as the REST check for that connector. |
 
-**Do not point `*_APP_MODE` at `live` for a first smoke.** A live Lob key is refused when mode is `test`. Live mode still does not mail from these routes, but OpenSRS lookups hit the production reseller host, and a live Sumvid key spends real credits.
+**Do not point `PAPER_SEND_APP_MODE` at `live` for a first smoke.** A live Lob key is refused when mode is `test`. After the test webhook is green, `live` does ask Lob to mail, and that spends postage. OpenSRS lookups in live hit the production reseller host, and a live Sumvid key spends real credits.
 
-The Express apps under `services/` can still spend if you deploy them separately and set their own unprefixed keys. This Vercel gateway does not proxy `*_SERVICE_URL`.
+The Express apps under `services/` can still spend if you deploy them separately and set their own unprefixed keys. This Vercel gateway does not proxy `*_SERVICE_URL`. PaperSend mail from this gateway does not use that proxy.
