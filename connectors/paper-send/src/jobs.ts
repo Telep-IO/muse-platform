@@ -126,6 +126,14 @@ export function recordJobEvent(eventId: string, jobId: string, env: Env = proces
   return storeFor(env).recordEvent(eventId, jobId);
 }
 
+export function releaseJobEvent(eventId: string, env: Env = process.env): Promise<void> {
+  return storeFor(env).releaseEvent(eventId);
+}
+
+export function fulfillmentClaimId(jobId: string): string {
+  return `job:${jobId}`;
+}
+
 export async function attachCheckout(
   id: string,
   ownerKeyId: string,
@@ -135,7 +143,19 @@ export async function attachCheckout(
   if (session.mode !== "live") return;
   const job = await getJob(id, ownerKeyId, env);
   if (!job) return;
-  await saveJob({ ...job, stripeSessionId: session.id }, env);
+  if (job.stripeSessionId && job.stripeSessionId !== session.id) {
+    throw new HttpError(409, "conflict", "A checkout session is already attached to this job");
+  }
+  if (job.stripeSessionId === session.id && job.status === "queued") return;
+  await saveJob(
+    {
+      ...job,
+      stripeSessionId: session.id,
+      status: "queued",
+      note: "Checkout started. Nothing has been transmitted. Lob sends only after Stripe confirms payment.",
+    },
+    env,
+  );
 }
 
 export function resetJobs(): void {

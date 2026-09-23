@@ -131,7 +131,7 @@ export async function dispatchStripeEvent(
   const session = paidSessionFromEvent(event);
   const base: WebhookResult = { received: true, stub: false, type: event.type, id: event.id };
   if (!session || !fulfill) return base;
-  if (session.paymentStatus && session.paymentStatus !== "paid") {
+  if (session.paymentStatus !== "paid") {
     return { ...base, fulfilled: false, lobCalled: false, reason: "unpaid" };
   }
   const outcome = await fulfill(session);

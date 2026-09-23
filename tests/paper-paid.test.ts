@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { createDraftStore, dispatchStripeEvent, handleWebhook, lookupKey, type PaidSession, type QueryFn } from "@telep/platform";
-import { createJob, fulfillPaperPayment, handlePaperSendRest, resetJobs, sendPaperLetter, useJobStore, type Job } from "@telep/paper-send";
+import { attachCheckout, createJob, fulfillPaperPayment, handlePaperSendRest, resetJobs, sendPaperLetter, useJobStore, type Job } from "@telep/paper-send";
 
 const originalFetch = globalThis.fetch;
 
@@ -33,6 +33,10 @@ function fakeQuery() {
       const id = String(params[0]);
       if (events.has(id)) return { rows: [], rowCount: 0 };
       events.add(id);
+      return { rows: [], rowCount: 1 };
+    }
+    if (compact.startsWith("delete from muse_stripe_events") && compact.includes("where id")) {
+      events.delete(String(params[0]));
       return { rows: [], rowCount: 1 };
     }
     if (compact.startsWith("insert into muse_drafts")) {
@@ -363,4 +367,134 @@ test("webhook stub mode does not fulfill, and only paid checkout events are disp
   assert.equal(paid.fulfilled, false);
   assert.equal(paid.reason, "demo");
   assert.equal(paid.lobCalled, false);
+
+  const missingStatus = await dispatchStripeEvent(
+    {
+      id: "evt_missing_status",
+      type: "checkout.session.completed",
+      data: { object: { id: "cs_2", metadata: { connector: "paper-send", jobId: "ps_x" } } },
+    },
+    async () => {
+      fulfilled += 1;
+      return { fulfilled: true, lobCalled: true };
+    },
+  );
+  assert.equal(missingStatus.reason, "unpaid");
+  assert.equal(missingStatus.lobCalled, false);
+  assert.equal(fulfilled, 1);
+
+  const asyncPaid = await dispatchStripeEvent(
+    {
+      id: "evt_async",
+      type: "checkout.session.async_payment_succeeded",
+      data: { object: { id: "cs_3", metadata: { connector: "paper-send", jobId: "ps_x" } } },
+    },
+    async (session) => {
+      fulfilled += 1;
+      assert.equal(session.paymentStatus, "paid");
+      return { fulfilled: false, lobCalled: false, reason: "demo" };
+    },
+  );
+  assert.equal(asyncPaid.reason, "demo");
+  assert.equal(fulfilled, 2);
+});
+
+test("parallel fulfillment claims the job once and posts a single Lob letter", async () => {
+  const fake = fakeQuery();
+  useJobStore(createDraftStore<Job>({ connector: "paper-send", query: fake.query }));
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    return jsonResponse({ id: "ltr_once", status: "rendered", expected_delivery_date: null });
+  };
+  const job = await createJob(
+    {
+      sender: address("A", "1 Main"),
+      recipient: address("B", "2 Main"),
+      ownerKeyId: "k",
+      catalogOrigin: "http://localhost:3000",
+      live: true,
+    },
+    liveEnv,
+  );
+  const [first, second] = await Promise.all([
+    fulfillPaperPayment(session(job, "evt_a"), liveEnv),
+    fulfillPaperPayment(session(job, "evt_b"), liveEnv),
+  ]);
+  assert.equal(calls, 1);
+  const mailed = [first, second].filter((result) => result.lobCalled);
+  assert.equal(mailed.length, 1);
+  assert.equal(mailed[0].lobId, "ltr_once");
+  const other = [first, second].find((result) => !result.lobCalled);
+  assert.ok(other);
+  assert.equal(other.lobCalled, false);
+  assert.ok(other.duplicate === true || other.reason === "in_flight");
+});
+
+test("a second live checkout is refused and does not open another Stripe session", async () => {
+  const fake = fakeQuery();
+  useJobStore(createDraftStore<Job>({ connector: "paper-send", query: fake.query }));
+  const key = "muse_sk_test_localdev";
+  const previous = {
+    mode: process.env.PAPER_SEND_APP_MODE,
+    database: process.env.PAPER_SEND_DATABASE_URL,
+    keys: process.env.MUSE_API_KEYS,
+    stripe: process.env.STRIPE_SECRET_KEY,
+  };
+  process.env.PAPER_SEND_APP_MODE = "test";
+  process.env.PAPER_SEND_DATABASE_URL = liveEnv.PAPER_SEND_DATABASE_URL;
+  process.env.MUSE_API_KEYS = key;
+  process.env.STRIPE_SECRET_KEY = "sk_test_example";
+  let fetches = 0;
+  globalThis.fetch = async () => {
+    fetches += 1;
+    return jsonResponse({ id: "cs_should_not_be_created", url: "https://checkout.stripe.com/c/pay/cs_should_not_be_created" });
+  };
+  try {
+    const auth = lookupKey(key);
+    assert.ok(auth);
+    const job = await createJob(
+      {
+        sender: address("A", "1 Main"),
+        recipient: address("B", "2 Main"),
+        ownerKeyId: auth.keyId,
+        catalogOrigin: "http://localhost:3000",
+        live: true,
+      },
+      liveEnv,
+    );
+    await attachCheckout(job.id, auth.keyId, { id: "cs_test_existing", mode: "live" });
+    const stored = await createDraftStore<Job>({ connector: "paper-send", query: fake.query }).get(job.id, auth.keyId);
+    assert.equal(stored?.status, "queued");
+    assert.equal(stored?.stripeSessionId, "cs_test_existing");
+
+    const again = await handlePaperSendRest(
+      new Request(`http://localhost/v1/paper-send/jobs/${job.id}/checkout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}` },
+      }),
+      ["jobs", job.id, "checkout"],
+      auth,
+    );
+    assert.equal(again.status, 409);
+    assert.equal(fetches, 0);
+    const after = await createDraftStore<Job>({ connector: "paper-send", query: fake.query }).get(job.id, auth.keyId);
+    assert.equal(after?.stripeSessionId, "cs_test_existing");
+
+    await assert.rejects(
+      () => attachCheckout(job.id, auth.keyId, { id: "cs_test_other", mode: "live" }),
+      (error: unknown) => {
+        assert.equal(error instanceof Error ? error.message : "", "A checkout session is already attached to this job");
+        return true;
+      },
+    );
+    const still = await createDraftStore<Job>({ connector: "paper-send", query: fake.query }).get(job.id, auth.keyId);
+    assert.equal(still?.stripeSessionId, "cs_test_existing");
+  } finally {
+    restoreEnv("PAPER_SEND_APP_MODE", previous.mode);
+    restoreEnv("PAPER_SEND_DATABASE_URL", previous.database);
+    restoreEnv("MUSE_API_KEYS", previous.keys);
+    restoreEnv("STRIPE_SECRET_KEY", previous.stripe);
+  }
 });

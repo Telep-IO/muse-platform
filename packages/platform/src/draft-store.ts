@@ -11,6 +11,8 @@ export type DraftStore<T extends OwnedRecord> = {
   list(ownerKeyId: string): Promise<T[]>;
   /** Returns false when this Stripe event id was already recorded. */
   recordEvent(eventId: string, jobId: string): Promise<boolean>;
+  /** Drop a previously recorded event id so a retry can claim it again. */
+  releaseEvent(eventId: string): Promise<void>;
   reset(): Promise<void>;
 };
 
@@ -75,6 +77,9 @@ function memoryDraftStore<T extends OwnedRecord>(connector: string): DraftStore<
       if (events.has(eventId)) return false;
       events.add(eventId);
       return true;
+    },
+    async releaseEvent(eventId) {
+      events.delete(eventId);
     },
     async reset() {
       items.clear();
@@ -166,6 +171,10 @@ function postgresDraftStore<T extends OwnedRecord>(connector: string, query: Que
         [eventId, connector, jobId],
       );
       return result.rowCount === 1;
+    },
+    async releaseEvent(eventId) {
+      await ensure();
+      await query(`DELETE FROM muse_stripe_events WHERE id = $1 AND connector = $2`, [eventId, connector]);
     },
     async reset() {
       await ensure();

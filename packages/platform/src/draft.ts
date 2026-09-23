@@ -36,6 +36,10 @@ async function paidCheckout(
   if (item.status !== "draft") {
     return withCors(request, jsonError(409, "conflict", `${label} is ${item.status}, checkout only from draft`));
   }
+  const existingSession = (item as { stripeSessionId?: string }).stripeSessionId;
+  if (existingSession) {
+    return withCors(request, jsonError(409, "conflict", `${label} already has checkout session ${existingSession}`));
+  }
   const page = `${catalogOrigin()}/connectors/${slug}#checkout-${item.id}`;
   const session = await createCheckoutSession({
     connectorSlug: slug,

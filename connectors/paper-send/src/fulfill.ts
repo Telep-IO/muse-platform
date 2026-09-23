@@ -1,8 +1,6 @@
 import { HttpError, type Env, type FulfillResult, type PaidSession } from "@telep/platform";
-import { getJobById, hasDurableJobStore, recordJobEvent, saveJob, type Job } from "./jobs";
+import { fulfillmentClaimId, getJobById, hasDurableJobStore, recordJobEvent, releaseJobEvent, saveJob, type Job } from "./jobs";
 import { assertPaperReady, paperRuntime, sendPaperLetter } from "./provider";
-
-const sending = new Set<string>();
 
 function paidJob(job: Job, session: PaidSession, note: string, extra: Partial<Job> = {}): Job {
   return {
@@ -46,9 +44,6 @@ export async function fulfillPaperPayment(session: PaidSession, env: Env = proce
   if (job.fulfillmentError && job.stripeEventId === session.eventId) {
     return { fulfilled: false, duplicate: true, lobCalled: false, reason: job.fulfillmentError, jobId: job.id };
   }
-  if (sending.has(job.id)) {
-    return { fulfilled: false, duplicate: true, lobCalled: false, reason: "in_flight", retry: true, jobId: job.id };
-  }
 
   const expectLive = runtime.mode === "live";
   if (session.livemode !== expectLive) {
@@ -81,7 +76,19 @@ export async function fulfillPaperPayment(session: PaidSession, env: Env = proce
     return { fulfilled: false, lobCalled: false, reason: message, retry: true, jobId: job.id };
   }
 
-  sending.add(job.id);
+  const claimId = fulfillmentClaimId(job.id);
+  const claimed = await recordJobEvent(claimId, job.id, env);
+  if (!claimed) {
+    const again = await getJobById(job.id, env);
+    if (again?.status === "submitted" && again.lobId) {
+      return { fulfilled: true, duplicate: true, lobCalled: false, lobId: again.lobId, jobId: job.id };
+    }
+    if (again?.fulfillmentError) {
+      return { fulfilled: false, duplicate: true, lobCalled: false, reason: again.fulfillmentError, jobId: job.id };
+    }
+    return { fulfilled: false, duplicate: true, lobCalled: false, reason: "in_flight", retry: true, jobId: job.id };
+  }
+
   let lobCalled = false;
   try {
     await saveJob(paidJob(job, session, "Paid. Asking Lob to send."), env);
@@ -121,9 +128,8 @@ export async function fulfillPaperPayment(session: PaidSession, env: Env = proce
       await recordJobEvent(session.eventId, job.id, env);
     } else {
       await saveJob(paidJob(job, session, `Paid, but Lob did not accept the letter yet: ${message}`), env);
+      await releaseJobEvent(claimId, env);
     }
     return { fulfilled: false, lobCalled, reason: message, retry, jobId: job.id };
-  } finally {
-    sending.delete(job.id);
   }
 }
