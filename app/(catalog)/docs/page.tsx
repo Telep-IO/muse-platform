@@ -66,6 +66,14 @@ POST ${apiUrl("/mcp/{slug}")}`}</code>
         <code>/connectors/ship-label/docs</code>.
       </p>
 
+      <h2 id="gift-send">GiftSend</h2>
+      <p>
+        <code>POST /v1/gift-send/gifts</code> drafts a digital gift card or prepaid reward. Demo mode
+        stores the draft locally and does not call Tremendous or Stripe. Paying is a separate checkout
+        call. Tremendous sends the reward only after Stripe reports <code>payment_status</code> paid.
+        MCP: <code>{apiUrl("/mcp/gift-send")}</code>. Docs: <code>/connectors/gift-send/docs</code>.
+      </p>
+
       <h2 id="sumvid">Sumvid stub</h2>
       <p>
         <code>POST /v1/sumvid/summaries</code> records an in-memory stub from a YouTube URL. It does

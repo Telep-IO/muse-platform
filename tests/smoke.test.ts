@@ -72,6 +72,7 @@ test("v1 index lists implemented gateway modules", () => {
     "ink-send",
     "domain-send",
     "ship-label",
+    "gift-send",
   ];
   for (const slug of implemented) {
     const connector = index.connectors.find((c) => c.slug === slug);
@@ -94,6 +95,7 @@ test("merged OpenAPI includes sumvid, shipsignal, and *-send paths", () => {
   assert.ok(spec.paths["/v1/shipsignal/parcels"]);
   assert.ok(spec.paths["/v1/paper-send/jobs"]);
   assert.ok(spec.paths["/v1/ship-label/shipments"]);
+  assert.ok(spec.paths["/v1/gift-send/gifts"]);
   assert.ok(spec.paths["/v1/sign-send/envelopes"]);
   assert.ok(spec.paths["/v1/fax-send/faxes"]);
   assert.ok(spec.paths["/v1/call-send/calls"]);

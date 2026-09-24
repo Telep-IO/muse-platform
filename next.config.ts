@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     "@telep/registry",
     "@telep/platform",
     "@telep/paper-send",
+    "@telep/gift-send",
     "@telep/ship-label",
     "@telep/sign-send",
     "@telep/fax-send",

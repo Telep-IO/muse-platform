@@ -56,6 +56,31 @@ export const connectors: Connector[] = [
     gatewayImplemented: true,
   },
   {
+    slug: "gift-send",
+    name: "GiftSend",
+    oneLiner: "Draft a digital gift card or prepaid reward, review it, and pay face value plus a service fee.",
+    status: "submitted",
+    category: "rewards",
+    pricingBlurb: "Face value pass-through plus a $2.99 service fee. Gift cards, Visa/Mastercard prepaid, and charity only.",
+    repoUrl: "https://github.com/Telep-IO/muse-platform/tree/main/services/gift-send",
+    docsPath: "/connectors/gift-send/docs",
+    apiBasePath: "/v1/gift-send",
+    mcpPath: "/mcp/gift-send",
+    privacyPath: "/connectors/gift-send/privacy",
+    termsPath: "/connectors/gift-send/terms",
+    howMuseUsesIt:
+      "Muse drafts a digital gift card or prepaid reward: recipient, amount, brand, and a short message. You review the draft and pay the face value plus a service fee. Tremendous delivers it by email, text, or link only after that payment. The agent never sends the reward on its own.",
+    examplePrompts: [
+      "Draft a $50 Amazon gift card to ada@example.com with a birthday note. Show me the total before anyone pays.",
+      "What prepaid Visa options can I send in the US, and what is the service fee?",
+      "Open checkout for that gift draft. Do not send the reward yourself.",
+      "Was the reward delivered, and can I still cancel it?",
+    ],
+    productNotes:
+      "Catalog status uses the same pre-listing value as PaperSend (submitted). That badge is not Meta approval, and this change does not file the connector. Demo mode is a stub and does not call Tremendous or Stripe. Live rewards require Tremendous Platform Client registration with Sales; a self-serve API key is not accepted as live-ready. Cash payouts (Venmo, PayPal, ACH, bank) are disabled.",
+    gatewayImplemented: true,
+  },
+  {
     slug: "sumvid",
     name: "Sumvid",
     oneLiner: "Summarize YouTube and other videos for Muse.",

@@ -1,4 +1,5 @@
 import type { McpTool } from "@telep/platform";
+import { giftSendTools } from "@telep/gift-send";
 import { shipLabelTools } from "@telep/ship-label";
 import { paperSendTools } from "@telep/paper-send";
 import { sumvidTools } from "@telep/sumvid";
@@ -38,6 +39,56 @@ export interface ConnectorDocs {
 }
 
 const NOTES: Record<string, { demoNote: string; createEndpoint: string; createExampleBody: string; billingNote?: string; extraSections?: ConnectorDocsSection[] }> = {
+  "gift-send": {
+    demoNote:
+      "Demo mode returns a stub catalog and a stub checkout URL. It does not call Tremendous (including the free sandbox) or Stripe, and a stub draft is not a sent reward. Test mode uses the Tremendous sandbox. Tremendous sends the reward only after the shared billing webhook reports payment_status paid.",
+    createEndpoint: "/v1/gift-send/gifts",
+    createExampleBody:
+      '{"recipient":{"email":"ada@example.com","name":"Ada"},"reward_id":"OKMHM2X2OHYV","amount_cents":5000,"message":"Happy birthday","delivery_method":"EMAIL"}',
+    billingNote:
+      "Customer total = reward face value + a $2.99 service fee (SERVICE_FEE_CENTS, default 299). Face value is a pass-through. Tremendous's fee on gift cards, Visa/Mastercard prepaid, and charity is $0. Demo mode does not bill.",
+    extraSections: [
+      {
+        heading: "What GiftSend does",
+        paragraphs: [
+          "GiftSend lets Muse draft a digital gift card or prepaid reward. You choose the recipient, amount, brand, and message, review it, and pay the face value plus a service fee through Stripe. Tremendous delivers the reward by email, text, or link.",
+          "Tools: list_reward_products, create_gift_draft, send_gift, get_gift_status, cancel_gift, list_gifts, and check_credentials. send_gift opens checkout. It does not create a Tremendous order.",
+        ],
+      },
+      {
+        heading: "Modes",
+        paragraphs: [
+          "demo: offline stubs. Zero HTTP to Tremendous, its sandbox, or Stripe.",
+          "test: Tremendous sandbox at https://testflight.tremendous.com/api/v2 (free, fake balance) and a Stripe test key. The shared /v1/billing/webhook places an order only when payment_status is paid.",
+          "live: production API at https://api.tremendous.com/api/v2. The fulfillment service does not boot until TREMENDOUS_PLATFORM_CLIENT_REFERENCE is set. A self-serve API key is not live-ready. Platform Client registration with Tremendous Sales is still required. This page does not claim that registration is finished.",
+        ],
+      },
+      {
+        heading: "Pricing",
+        paragraphs: [
+          "total = face value from the Tremendous catalog, read at draft time, plus the configured service fee. The default fee is $2.99. Gift cards, Visa/Mastercard prepaid, and charity have a $0 Tremendous fee, so a $50 card costs $50.00 at Tremendous. The balance that pays rewards is prefunded by bank ACH. GiftSend never auto-funds that balance by credit card.",
+        ],
+      },
+      {
+        heading: "Gift cards only",
+        paragraphs: [
+          "Launch scope is digital gift cards, Visa/Mastercard prepaid (Tremendous category visa_card), and charity. Venmo, PayPal, ACH, and bank payouts are disabled because those are cash transmission. Enabling them needs a separate counsel review. Limits: $2,000 per payout and $10,000 per recipient per day.",
+        ],
+      },
+      {
+        heading: "Cancellation",
+        paragraphs: [
+          "cancel_gift asks Tremendous to cancel the reward. A redeemed reward fails with HTTP 422, and GiftSend returns that refusal. The Tremendous API documents cancellation for non-expired rewards with a delivery failure. Rewards send when payment succeeds. The create-order field deliver_at can schedule a date within the next year (time-of-day is ignored); GiftSend v1 does not expose scheduling.",
+        ],
+      },
+      {
+        heading: "Tremendous",
+        paragraphs: [
+          "Rewards are delivered by Tremendous on the Platform Client track. GiftSend is not Tremendous. The Tremendous Corporate Client Service Agreement (https://www.tremendous.com/terms/) is incorporated into the GiftSend terms. Platform Client Terms: https://www.tremendous.com/platform-client-terms/. API introduction: https://developers.tremendous.com/docs/introduction. The reference overview URL returned 404; production and sandbox hosts were confirmed from the OpenAPI servers list.",
+        ],
+      },
+    ],
+  },
   "ship-label": {
     demoNote:
       "Demo mode returns stub USPS rates and a stub label. It does not call EasyPost or Stripe, and a stub label is not postage. Test and live rate-shop USPS through EasyPost before payment (that does not buy postage). EasyPost buys the label only after the shared billing webhook reports payment_status paid.",
@@ -138,6 +189,7 @@ const NOTES: Record<string, { demoNote: string; createEndpoint: string; createEx
 };
 
 const TOOLS: Record<string, McpTool[]> = {
+  "gift-send": giftSendTools,
   "ship-label": shipLabelTools,
   "paper-send": paperSendTools,
   sumvid: sumvidTools,
