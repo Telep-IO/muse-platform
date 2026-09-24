@@ -158,6 +158,8 @@ export function createProviders(config, deps = {}) {
           success_url: config.successUrl,
           cancel_url: config.cancelUrl,
           metadata: {
+            connector: "ship-label",
+            jobId: draft.id,
             draft_id: draft.id,
             rate_id: draft.selected_rate_id,
             postage_cents: String(draft.postage_cents),

@@ -32,10 +32,7 @@ export default async function ConnectorDocsPage({
   const mcpUrl = apiUrl(connector.mcpPath);
   const restBase = apiUrl(connector.apiBasePath);
   const openapiUrl = apiUrl(`${connector.apiBasePath}/openapi.json`);
-  const createPath = docs.createEndpoint.startsWith("/v1/")
-    ? docs.createEndpoint
-    : `${connector.apiBasePath}${docs.createEndpoint}`;
-  const createUrl = apiUrl(createPath);
+  const createUrl = apiUrl(docs.createEndpoint);
 
   const mcpExample = JSON.stringify(
     { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} },

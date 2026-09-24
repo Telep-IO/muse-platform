@@ -2,6 +2,81 @@ import { authenticate, AuthError, type AuthResult } from "./auth";
 import { jsonError } from "./errors";
 import { withCors } from "./cors";
 
+export function mcpAuth(ctx: { auth: AuthResult | null }): AuthResult {
+  if (!ctx.auth) throw new Error("API key required");
+  return ctx.auth;
+}
+
+export const mcpEmptySchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  properties: {},
+};
+
+export const mcpIdSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: { id: { type: "string" } },
+};
+
+export function mcpCheckTool(description: string, run: () => Promise<unknown> | unknown): McpTool {
+  return {
+    name: "check_credentials",
+    description,
+    inputSchema: mcpEmptySchema,
+    async handler(_args, ctx) {
+      mcpAuth(ctx);
+      return run();
+    },
+  };
+}
+
+export function mcpGetTool(
+  name: string,
+  description: string,
+  missing: string,
+  load: (id: string, ownerKeyId: string) => unknown | Promise<unknown>,
+): McpTool {
+  return {
+    name,
+    description,
+    inputSchema: mcpIdSchema,
+    async handler(args, ctx) {
+      const item = await load(String(args.id), mcpAuth(ctx).keyId);
+      if (item == null) throw new Error(missing);
+      return item;
+    },
+  };
+}
+
+export function mcpNoArgTool(name: string, description: string, run: (ownerKeyId: string) => Promise<unknown> | unknown): McpTool {
+  return {
+    name,
+    description,
+    inputSchema: mcpEmptySchema,
+    async handler(_args, ctx) {
+      return run(mcpAuth(ctx).keyId);
+    },
+  };
+}
+
+export function mcpListTool(
+  name: string,
+  description: string,
+  key: string,
+  list: (ownerKeyId: string) => unknown[] | Promise<unknown[]>,
+): McpTool {
+  return {
+    name,
+    description,
+    inputSchema: mcpEmptySchema,
+    async handler(_args, ctx) {
+      return { [key]: await list(mcpAuth(ctx).keyId) };
+    },
+  };
+}
+
 export type McpTool = {
   name: string;
   description: string;

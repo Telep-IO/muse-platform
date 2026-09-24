@@ -9,10 +9,12 @@ import {
   cancelLabel,
   checkShipLabel,
   createShipmentDraft,
+  fulfillShipLabelPayment,
   getLabel,
   quoteCents,
   quoteShipLabel,
 } from "@telep/ship-label";
+import { dispatchStripeEvent, type PaidSession } from "@telep/platform";
 import { dispatchMcp, dispatchRest } from "../lib/gateway";
 
 const from = {
@@ -177,6 +179,54 @@ test("test mode draft is proxied to the fulfillment service, not EasyPost", asyn
   assert.equal(draft.quote.total_cents, 936);
   assert.match(url, /^http:\/\/127\.0\.0\.1:9\/drafts$/);
   assert.equal(url.includes("easypost.com"), false);
+});
+
+test("shared billing webhook buys only a paid ship-label session and ignores other connectors", async () => {
+  const calls: string[] = [];
+  globalThis.fetch = async (input) => {
+    calls.push(String(input));
+    return new Response(JSON.stringify({ fulfilled: true, duplicate: calls.length > 1 }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+  const env = {
+    SHIP_LABEL_APP_MODE: "test",
+    SHIP_LABEL_EASYPOST_API_KEY: "EZTK_example",
+    SHIP_LABEL_SERVICE_URL: "http://127.0.0.1:9",
+  };
+  const paid = {
+    id: "cs_shared",
+    eventId: "evt_1",
+    eventType: "checkout.session.completed",
+    paymentStatus: "paid",
+    livemode: false,
+    metadata: { connector: "ship-label", jobId: "sd_remote", draft_id: "sd_remote", rate_id: "rate_usps", postage_cents: "737", fee_cents: "199" },
+    amountSubtotal: 936,
+    amountTotal: 936,
+    currency: "usd",
+  } satisfies PaidSession;
+  const other = await fulfillShipLabelPayment({ ...paid, metadata: { connector: "paper-send", jobId: "ps_1" } }, env);
+  assert.equal(other, undefined);
+  const demo = await fulfillShipLabelPayment(paid, { ...env, SHIP_LABEL_APP_MODE: "demo" });
+  assert.equal(demo?.reason, "demo");
+  const unpaid = await fulfillShipLabelPayment({ ...paid, paymentStatus: "unpaid" }, env);
+  assert.equal(unpaid?.fulfilled, false);
+  assert.equal(unpaid?.reason, "unpaid");
+  const bought = await fulfillShipLabelPayment(paid, env);
+  assert.equal(bought?.fulfilled, true);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0], /\/drafts\/sd_remote\/fulfill$/);
+  const ignored = await dispatchStripeEvent(
+    {
+      id: "evt_paper",
+      type: "checkout.session.completed",
+      data: { object: { id: "cs_paper", payment_status: "paid", metadata: { connector: "paper-send", jobId: "ps_1" } } },
+    },
+    (session) => fulfillShipLabelPayment(session, env),
+  );
+  assert.equal(ignored.fulfilled, undefined);
+  assert.equal(calls.length, 1);
 });
 
 test("gateway routes do not import the fulfillment service", () => {

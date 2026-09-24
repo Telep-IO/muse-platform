@@ -55,6 +55,20 @@ export async function createApp(config, db, providers, options = {}) {
     const result = await orders.checkout(req.params.id, req.body?.rate_id);
     res.status(201).json(result);
   });
+  app.post("/drafts/:id/reserve", async (req, res) => {
+    res.json(await orders.reserve(req.params.id, req.body?.rate_id));
+  });
+  app.post("/drafts/:id/session", async (req, res) => {
+    res.json(await orders.attachSession(req.params.id, req.body?.session_id, req.body?.checkout_url));
+  });
+  app.post("/drafts/:id/release", async (req, res) => {
+    res.json(await orders.releaseReserve(req.params.id));
+  });
+  app.post("/drafts/:id/fulfill", async (req, res) => {
+    const result = await orders.fulfillPaid(req.body);
+    const status = result.reason === "in_flight" ? 503 : 200;
+    res.status(status).json(result);
+  });
   app.get("/labels/:id", async (req, res) => {
     res.json(await orders.label(req.params.id));
   });

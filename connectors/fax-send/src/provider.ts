@@ -1,12 +1,5 @@
-import { HttpError, assertProviderOk, basicAuthHeader, envValue, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
+import { HttpError, assertProviderOk, basicAuthHeader, envValue, modeFulfillment, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
 import { PRICE_PER_PAGE_CENTS } from "./faxes";
-
-const LIVE_NOTE =
-  "Draft only. Nothing was transmitted. A human must review and pay before the fax provider is asked to send.";
-
-export function faxLiveNote(): string {
-  return LIVE_NOTE;
-}
 
 export function faxRuntime(env: Env = process.env) {
   const mode = readAppMode("FAX_SEND_APP_MODE", env);
@@ -85,15 +78,9 @@ export async function checkFax(env: Env = process.env) {
 
 export function faxDescriptor(env: Env = process.env) {
   const runtime = faxRuntime(env);
-  const ready = runtime.mode !== "demo" && Boolean(runtime.provider && runtime.apiKey);
-  return {
-    mode: runtime.mode,
-    fulfillment: runtime.mode === "demo" ? "stub" : ready ? "live" : "missing_credentials",
-    note:
-      runtime.mode === "demo"
-        ? "Create a fax at POST /v1/fax-send/faxes. Fax provider fulfillment is not called in demo mode."
-        : ready
-          ? "POST /faxes stores a draft and does not transmit. GET /check validates provider auth."
-          : "FAX_SEND_APP_MODE is test or live but FAX_SEND_FAX_PROVIDER or FAX_SEND_FAX_API_KEY is empty.",
-  };
+  return modeFulfillment(runtime.mode, runtime.mode !== "demo" && Boolean(runtime.provider && runtime.apiKey), {
+    demo: "Create a fax at POST /v1/fax-send/faxes. Fax provider fulfillment is not called in demo mode.",
+    ready: "POST /faxes stores a draft and does not transmit. GET /check validates provider auth.",
+    missing: "FAX_SEND_APP_MODE is test or live but FAX_SEND_FAX_PROVIDER or FAX_SEND_FAX_API_KEY is empty.",
+  });
 }

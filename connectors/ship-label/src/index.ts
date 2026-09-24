@@ -1,6 +1,4 @@
-export { handleShipLabelRest } from "./rest";
-export { handleShipLabelMcp } from "./mcp";
-export { shipLabelOpenApi } from "./openapi";
+export { fulfillShipLabelPayment, handleShipLabelMcp, handleShipLabelRest, shipLabelOpenApi, shipLabelTools } from "./connector";
 export { assertShipLabelReady, checkShipLabel, quoteShipLabel, shipLabelDescriptor, shipLabelRuntime } from "./provider";
 export {
   CARRIER_ALLOWLIST,

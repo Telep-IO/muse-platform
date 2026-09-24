@@ -25,7 +25,7 @@ function configuredKeys(): string[] {
     .filter(Boolean);
 }
 
-export function parseBearer(header: string | null): string | null {
+function parseBearer(header: string | null): string | null {
   if (!header) return null;
   const match = header.match(/^Bearer\s+(.+)$/i);
   return match?.[1]?.trim() || null;

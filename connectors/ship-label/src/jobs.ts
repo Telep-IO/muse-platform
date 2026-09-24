@@ -2,7 +2,8 @@ import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { envValue, HttpError, providerRequest, readAppMode, type Env } from "@telep/platform";
+import { createCheckoutSession, envValue, HttpError, providerRequest, readAppMode, type Env } from "@telep/platform";
+import { assertShipLabelReady } from "./provider";
 
 /** USPS only until a later phase explicitly expands scope. */
 export const CARRIER_ALLOWLIST = ["USPS"] as const;
@@ -362,10 +363,53 @@ export async function buyShippingLabel(
   const id = safeId(draftId);
   if (!rateId) throw new HttpError(400, "invalid_rate", "rate_id is required");
   if (readAppMode("SHIP_LABEL_APP_MODE", env) !== "demo") {
-    return (await serviceCall(env, `/drafts/${id}/checkout`, ownerKeyId, {
+    assertShipLabelReady(env);
+    const reserved = (await serviceCall(env, `/drafts/${id}/reserve`, ownerKeyId, {
       method: "POST",
       body: JSON.stringify({ rate_id: rateId }),
-    })) as Record<string, unknown>;
+    })) as { quote: Quote };
+    const catalog = (env.NEXT_PUBLIC_CATALOG_URL || "https://muse.telep.io").replace(/\/$/, "");
+    let session;
+    try {
+      session = await createCheckoutSession({
+        connectorSlug: "ship-label",
+        jobId: id,
+        amountCents: reserved.quote.total_cents,
+        currency: "usd",
+        successUrl: `${catalog}/connectors/ship-label#checkout-${id}`,
+        cancelUrl: `${catalog}/connectors/ship-label`,
+        description: `USPS postage plus ShipLabel service fee for ${id}`,
+        metadata: {
+          draft_id: id,
+          rate_id: rateId,
+          postage_cents: String(reserved.quote.postage_cents),
+          fee_cents: String(reserved.quote.fee_cents),
+        },
+      });
+    } catch (error) {
+      await serviceCall(env, `/drafts/${id}/release`, ownerKeyId, { method: "POST" }).catch(() => undefined);
+      throw error;
+    }
+    try {
+      await serviceCall(env, `/drafts/${id}/session`, ownerKeyId, {
+        method: "POST",
+        body: JSON.stringify({ session_id: session.id, checkout_url: session.url }),
+      });
+    } catch (error) {
+      throw error;
+    }
+    return {
+      draft_id: id,
+      checkout_url: session.url,
+      session_id: session.id,
+      quote: reserved.quote,
+      mode: readAppMode("SHIP_LABEL_APP_MODE", env),
+      purchased: false,
+      note:
+        session.mode === "live"
+          ? "Stripe checkout is open. EasyPost buy runs only after the shared billing webhook reports payment_status paid."
+          : "Stub checkout: STRIPE_SECRET_KEY is not set. EasyPost was not called and no postage was purchased.",
+    };
   }
   return withDb(env, (db) => {
     const row = db.prepare("SELECT * FROM drafts WHERE id=? AND owner_key=?").get(id, ownerKeyId) as DraftRow | undefined;

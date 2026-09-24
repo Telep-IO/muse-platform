@@ -1,3 +1,5 @@
+import { applyEvent, memoryStore, withoutOwner } from "@telep/platform";
+
 export type FaxStatus = "draft" | "paid" | "sending" | "delivered" | "failed";
 
 export type Fax = {
@@ -24,7 +26,7 @@ export const MAX_PAGES = 10;
 const STUB_NOTE =
   "Gateway stub: fax is recorded in-memory only. Fax provider fulfillment (Sinch Fax API v3, formerly Phaxio) is not wired on this gateway yet. Do not treat this as a transmitted fax.";
 
-const faxes = new Map<string, Fax>();
+const faxes = memoryStore<Fax>();
 
 const E164_RE = /^\+(?=.*\d)[0-9\-\s]+$/;
 
@@ -70,59 +72,19 @@ export function createFax(input: {
       : STUB_NOTE,
     fulfillment: input.live ? "live" : "stub",
   };
-  faxes.set(id, fax);
-  return fax;
+  return faxes.save(fax);
 }
 
-export function getFax(id: string, ownerKeyId: string): Fax | undefined {
-  const fax = faxes.get(id);
-  if (!fax || fax.ownerKeyId !== ownerKeyId) return undefined;
-  return fax;
-}
+export const getFax = faxes.get;
+export const listFaxes = faxes.list;
+export const resetFaxes = faxes.reset;
+export const publicFax = withoutOwner<Fax>;
 
-export function listFaxes(ownerKeyId: string): Fax[] {
-  return [...faxes.values()]
-    .filter((f) => f.ownerKeyId === ownerKeyId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export function publicFax(fax: Fax): Omit<Fax, "ownerKeyId"> {
-  const { ownerKeyId: _omit, ...rest } = fax;
-  return rest;
-}
-
-/**
- * Test/demo-only state transitions. Never wired to a real provider.
- * paid -> sending -> delivered | failed.
- */
 export function demoEvent(id: string, ownerKeyId: string, event: string): Fax {
-  const fax = getFax(id, ownerKeyId);
-  if (!fax) throw new Error("Fax not found");
-
-  if (event === "paid") {
-    if (fax.status !== "draft") throw new Error(`cannot mark paid from status ${fax.status}`);
-    fax.status = "paid";
-    return fax;
-  }
-  if (event === "sending") {
-    if (fax.status !== "paid") throw new Error(`cannot send from status ${fax.status}`);
-    fax.status = "sending";
-    return fax;
-  }
-  if (event === "delivered") {
-    if (fax.status !== "sending") throw new Error(`cannot deliver from status ${fax.status}`);
-    fax.status = "delivered";
-    return fax;
-  }
-  if (event === "failed") {
-    if (fax.status !== "sending") throw new Error(`cannot fail from status ${fax.status}`);
-    fax.status = "failed";
-    return fax;
-  }
-  throw new Error(`unknown demo event: ${event}`);
-}
-
-/** Test helper — not used by production routes. */
-export function resetFaxes(): void {
-  faxes.clear();
+  return applyEvent(getFax(id, ownerKeyId), "Fax not found", event, {
+    paid: { from: "draft", to: "paid", verb: "mark paid" },
+    sending: { from: "paid", to: "sending", verb: "send" },
+    delivered: { from: "sending", to: "delivered", verb: "deliver" },
+    failed: { from: "sending", to: "failed", verb: "fail" },
+  });
 }

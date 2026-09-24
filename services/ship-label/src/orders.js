@@ -165,6 +165,44 @@ export function createOrders(config, db, providers, { now = Date.now } = {}) {
     return rate;
   }
 
+  async function reserve(id, rateId) {
+    const row = await get(id);
+    if (!row) throw fail(404, "Draft not found.", "not_found");
+    if (row.session_id) throw fail(409, "A checkout session already exists for this draft.", "checkout_exists");
+    const rate = rateFor(row, rateId);
+    const quote = quoteFor(rate.postage_cents, config);
+    if (row.status === "checkout" && row.selected_rate_id === rate.id) return { draft_id: id, quote, reserved: true };
+    if (row.status !== "draft" && row.status !== "checkout") throw fail(409, "This draft is not open for checkout.", "checkout_closed");
+    const claimed = await db.prepare(
+      `UPDATE drafts SET status='checkout', selected_rate_id=?, postage_cents=?, fee_cents=?, platform_fee_cents=?, total_cents=?,
+        lease_until=?, updated_at=? WHERE id=? AND session_id IS NULL AND status IN ('draft', 'checkout')`,
+    ).run(rate.id, quote.postage_cents, quote.fee_cents, quote.platform_fee_cents, quote.total_cents, now() + LEASE_MS, now(), id);
+    if (!claimed.changes) throw fail(409, "Checkout is already in progress for this draft.", "checkout_exists");
+    return { draft_id: id, quote, reserved: true };
+  }
+
+  async function attachSession(id, sessionId, checkoutUrl) {
+    const row = await get(id);
+    if (!row) throw fail(404, "Draft not found.", "not_found");
+    if (!sessionId) throw fail(400, "session_id is required.", "invalid_session");
+    if (row.session_id === sessionId) {
+      return { draft_id: id, session_id: sessionId, checkout_url: row.checkout_url, quote: quoteFor(row.postage_cents, config) };
+    }
+    if (row.session_id) throw fail(409, "A checkout session already exists for this draft.", "checkout_exists");
+    const updated = await db.prepare(
+      `UPDATE drafts SET session_id=?, checkout_url=?, lease_until=0, updated_at=? WHERE id=? AND session_id IS NULL AND status='checkout'`,
+    ).run(sessionId, checkoutUrl, now(), id);
+    if (!updated.changes) throw fail(409, "A checkout session already exists for this draft.", "checkout_exists");
+    return { draft_id: id, session_id: sessionId, checkout_url: checkoutUrl, quote: quoteFor(row.postage_cents, config) };
+  }
+
+  async function releaseReserve(id) {
+    await db.prepare(
+      `UPDATE drafts SET status='draft', lease_until=0, updated_at=? WHERE id=? AND session_id IS NULL AND status='checkout'`,
+    ).run(now(), id);
+    return { released: true };
+  }
+
   async function checkout(id, rateId) {
     const row = await get(id);
     if (!row) throw fail(404, "Draft not found.", "not_found");
@@ -313,6 +351,6 @@ export function createOrders(config, db, providers, { now = Date.now } = {}) {
     return publicLabel(await get(row.id));
   }
 
-  return { create, read, list, checkout, fulfillPaid, label, voidLabel, get, publicLabel };
+  return { create, read, list, reserve, attachSession, releaseReserve, checkout, fulfillPaid, label, voidLabel, get, publicLabel };
 }
 

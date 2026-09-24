@@ -1,13 +1,6 @@
 import { createHash } from "node:crypto";
-import { HttpError, envValue, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
+import { HttpError, envValue, modeFulfillment, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
 import { YEARLY_PRICE_CENTS, checkAvailability, type AvailabilityResult } from "./domains";
-
-const LIVE_NOTE =
-  "Draft only. This name was not registered. A human must review and pay before OpenSRS is asked to register.";
-
-export function domainLiveNote(): string {
-  return LIVE_NOTE;
-}
 
 export function domainRuntime(env: Env = process.env) {
   const mode = readAppMode("DOMAIN_SEND_APP_MODE", env);
@@ -134,15 +127,9 @@ export async function checkDomainCredentials(env: Env = process.env) {
 
 export function domainDescriptor(env: Env = process.env) {
   const runtime = domainRuntime(env);
-  const ready = runtime.mode !== "demo" && Boolean(runtime.apiKey && runtime.username);
-  return {
-    mode: runtime.mode,
-    fulfillment: runtime.mode === "demo" ? "stub" : ready ? "live" : "missing_credentials",
-    note:
-      runtime.mode === "demo"
-        ? "Check availability at POST /v1/domain-send/domains/check, then register at POST /v1/domain-send/domains. Registrar fulfillment is not called in demo mode."
-        : ready
-          ? "POST /domains/check runs an OpenSRS LOOKUP. POST /domains stores a draft and does not register."
-          : "DOMAIN_SEND_APP_MODE is test or live but reseller username or API key is empty.",
-  };
+  return modeFulfillment(runtime.mode, runtime.mode !== "demo" && Boolean(runtime.apiKey && runtime.username), {
+    demo: "Check availability at POST /v1/domain-send/domains/check, then register at POST /v1/domain-send/domains. Registrar fulfillment is not called in demo mode.",
+    ready: "POST /domains/check runs an OpenSRS LOOKUP. POST /domains stores a draft and does not register.",
+    missing: "DOMAIN_SEND_APP_MODE is test or live but reseller username or API key is empty.",
+  });
 }

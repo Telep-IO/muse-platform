@@ -1,3 +1,5 @@
+import { memoryStore, parsePostalAddress, withoutOwner } from "@telep/platform";
+
 export type Address = {
   name: string;
   address_line1: string;
@@ -29,35 +31,11 @@ export type Job = {
 const STUB_NOTE =
   "Gateway stub: job is recorded in-memory only. Full PDF rasterization and mail-provider fulfillment still live in the PaperSend app. Do not treat this as a mailed letter.";
 
-const jobs = new Map<string, Job>();
+const jobs = memoryStore<Job>();
 
 export function priceCents(pages: number): number {
   const n = Math.max(1, Math.min(5, Math.floor(pages) || 1));
   return 499 + 25 * (n - 1);
-}
-
-function requireAddress(value: unknown, label: string): Address {
-  if (!value || typeof value !== "object") {
-    throw new Error(`${label} is required`);
-  }
-  const a = value as Record<string, unknown>;
-  const name = String(a.name ?? "").trim();
-  const address_line1 = String(a.address_line1 ?? "").trim();
-  const address_city = String(a.address_city ?? "").trim();
-  const address_state = String(a.address_state ?? "").trim();
-  const address_zip = String(a.address_zip ?? "").trim();
-  if (!name || !address_line1 || !address_city || !address_state || !address_zip) {
-    throw new Error(`${label} needs name, address_line1, address_city, address_state, address_zip`);
-  }
-  return {
-    name,
-    address_line1,
-    address_line2: a.address_line2 ? String(a.address_line2) : "",
-    address_city,
-    address_state,
-    address_zip,
-    address_country: String(a.address_country ?? "US"),
-  };
 }
 
 export function createJob(input: {
@@ -68,8 +46,8 @@ export function createJob(input: {
   catalogOrigin: string;
   live?: boolean;
 }): Job {
-  const sender = requireAddress(input.sender, "sender");
-  const recipient = requireAddress(input.recipient, "recipient");
+  const sender = parsePostalAddress(input.sender, "sender", { line2: true, country: true });
+  const recipient = parsePostalAddress(input.recipient, "recipient", { line2: true, country: true });
   const pages = Math.max(1, Math.min(5, Number(input.document?.pages) || 1));
   const id = `ps_${crypto.randomUUID()}`;
   const live = input.live === true;
@@ -92,28 +70,10 @@ export function createJob(input: {
       : STUB_NOTE,
     fulfillment: live ? "live" : "stub",
   };
-  jobs.set(id, job);
-  return job;
+  return jobs.save(job);
 }
 
-export function getJob(id: string, ownerKeyId: string): Job | undefined {
-  const job = jobs.get(id);
-  if (!job || job.ownerKeyId !== ownerKeyId) return undefined;
-  return job;
-}
-
-export function listJobs(ownerKeyId: string): Job[] {
-  return [...jobs.values()]
-    .filter((job) => job.ownerKeyId === ownerKeyId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export function publicJob(job: Job): Omit<Job, "ownerKeyId"> {
-  const { ownerKeyId: _omit, ...rest } = job;
-  return rest;
-}
-
-/** Test helper — not used by production routes. */
-export function resetJobs(): void {
-  jobs.clear();
-}
+export const getJob = jobs.get;
+export const listJobs = jobs.list;
+export const resetJobs = jobs.reset;
+export const publicJob = withoutOwner<Job>;

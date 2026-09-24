@@ -390,6 +390,72 @@ test("test and live refuse to boot when credentials are missing", () => {
   assert.equal(live.platformFeeCents, null);
 });
 
+test("gateway reserve, one session, and shared fulfill buy postage once", async (t) => {
+  const config = await tempConfig(t);
+  const providers = fakeProviders();
+  const db = await openStore(config);
+  t.after(() => db.close());
+  const { app, orders } = await createApp(config, db, providers);
+  const http = await listen(app);
+  t.after(() => http.close());
+  const draft = await (
+    await http.call("/drafts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from, to, parcel }),
+    })
+  ).json();
+  const reserved = await http.call(`/drafts/${draft.draft_id}/reserve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rate_id: "rate_usps" }),
+  });
+  assert.equal(reserved.status, 200);
+  const session = await http.call(`/drafts/${draft.draft_id}/session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: "cs_shared", checkout_url: "https://checkout.stripe.com/c/pay/shared" }),
+  });
+  assert.equal(session.status, 200);
+  const repeat = await http.call(`/drafts/${draft.draft_id}/reserve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rate_id: "rate_usps" }),
+  });
+  assert.equal(repeat.status, 409);
+  assert.equal(providers.counts().checkouts, 0);
+  const paid = {
+    id: "cs_shared",
+    payment_status: "paid",
+    livemode: false,
+    payment_intent: "pi_shared",
+    amount_total: draft.rates.find((rate) => rate.id === "rate_usps").postage_cents + 199,
+    metadata: {
+      draft_id: draft.draft_id,
+      rate_id: "rate_usps",
+      postage_cents: "737",
+      fee_cents: "199",
+    },
+  };
+  const first = await http.call(`/drafts/${draft.draft_id}/fulfill`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(paid),
+  });
+  const second = await http.call(`/drafts/${draft.draft_id}/fulfill`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(paid),
+  });
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.equal((await second.json()).duplicate, true);
+  assert.equal(providers.counts().buys, 1);
+  const unpaid = await orders.fulfillPaid({ ...paid, payment_status: "unpaid" });
+  assert.equal(unpaid.fulfilled, false);
+  assert.equal(providers.counts().buys, 1);
+});
+
 test("a database refuses to open when the stored mode differs", async (t) => {
   const config = await tempConfig(t, { mode: "demo" });
   const demo = await openStore(config);
