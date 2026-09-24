@@ -289,7 +289,19 @@ test("a Tremendous webhook with a bad HMAC signature is rejected", async (t) => 
 
 test("test and live modes fail closed without credentials", () => {
   assert.throws(() => readConfig({ APP_MODE: "test" }), /TREMENDOUS_API_KEY/);
-  assert.throws(() => readConfig({ APP_MODE: "live", TREMENDOUS_API_KEY: "live-key", STRIPE_SECRET_KEY: "sk_live_x", STRIPE_WEBHOOK_SECRET: "whsec_x", TREMENDOUS_WEBHOOK_SECRET: "wh" }), /PLATFORM_CLIENT_REFERENCE/);
+  assert.throws(
+    () =>
+      readConfig({
+        APP_MODE: "live",
+        SERVICE_PUBLIC_URL: "https://gifts.example",
+        DATABASE_URL: "postgres://localhost/giftsend",
+        TREMENDOUS_API_KEY: "live-key",
+        STRIPE_SECRET_KEY: "sk_live_x",
+        STRIPE_WEBHOOK_SECRET: "whsec_x",
+        TREMENDOUS_WEBHOOK_SECRET: "wh",
+      }),
+    /PLATFORM_CLIENT_REFERENCE/,
+  );
   assert.throws(() => readConfig({ APP_MODE: "test", TREMENDOUS_API_KEY: "sandbox", STRIPE_SECRET_KEY: "sk_test_x" }), /STRIPE_WEBHOOK_SECRET/);
 });
 

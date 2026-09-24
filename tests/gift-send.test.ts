@@ -157,14 +157,14 @@ test("test mode credential check lists products and does not create an order", a
   assert.equal(result.tremendous, "ok");
   assert.equal(result.ordered, false);
   assert.equal(method, "GET");
-  assert.equal(url, "https://testflight.tremendous.com/api/v2/products?currency=USD");
+  assert.match(url, /^https:\/\/testflight\.tremendous\.com\/api\/v2\/products\?currency=USD$/);
   const live = await checkGiftSend({
     GIFT_SEND_APP_MODE: "live",
     GIFT_SEND_API_KEY: "live-key",
     GIFT_SEND_PLATFORM_CLIENT_REFERENCE: "platform-client-on-file",
   });
   assert.equal(live.mode, "live");
-  assert.equal(url, "https://api.tremendous.com/api/v2/products?currency=USD");
+  assert.match(url, /^https:\/\/api\.tremendous\.com\/api\/v2\/products\?currency=USD$/);
   assert.equal(url.includes("/orders"), false);
 });
 
