@@ -65,14 +65,14 @@ export function mcpListTool(
   name: string,
   description: string,
   key: string,
-  list: (ownerKeyId: string) => unknown[],
+  list: (ownerKeyId: string) => unknown[] | Promise<unknown[]>,
 ): McpTool {
   return {
     name,
     description,
     inputSchema: mcpEmptySchema,
     async handler(_args, ctx) {
-      return { [key]: list(mcpAuth(ctx).keyId) };
+      return { [key]: await list(mcpAuth(ctx).keyId) };
     },
   };
 }

@@ -47,10 +47,15 @@ POST ${apiUrl("/mcp/{slug}")}`}</code>
         Configure them in <code>MUSE_API_KEYS</code>. Missing keys on writes return 401.
       </p>
 
-      <h2 id="paper-send">PaperSend stub</h2>
+      <h2 id="paper-send">PaperSend</h2>
       <p>
-        <code>POST /v1/paper-send/jobs</code> records an in-memory draft. It does not print or mail.
-        The live PaperSend app still owns PDF rasterization and the mail provider. MCP tools:{" "}
+        <code>POST /v1/paper-send/jobs</code> creates a draft. With <code>PAPER_SEND_APP_MODE</code> unset
+        or <code>demo</code>, that draft is an in-memory stub (status “stubbed”) and Lob is never called.
+        With <code>test</code> or <code>live</code>, Postgres (<code>DATABASE_URL</code> or{" "}
+        <code>PAPER_SEND_DATABASE_URL</code>) is required. Checkout uses Stripe when{" "}
+        <code>STRIPE_SECRET_KEY</code> is set. Lob sends only after{" "}
+        <code>POST /v1/billing/webhook</code> verifies <code>checkout.session.completed</code>. The
+        gateway does not store PDF bytes; Lob receives HTML built from the job. MCP tools:{" "}
         <code>create_mail_job</code>, <code>get_job</code>, <code>list_jobs</code> at{" "}
         <code>{apiUrl("/mcp/paper-send")}</code>. The try-it form posts to this origin so local,
         preview, and production catalog hosts all work without CORS gymnastics.

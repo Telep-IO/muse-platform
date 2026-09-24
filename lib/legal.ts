@@ -9,7 +9,7 @@ export interface ConnectorLegal {
   terms: LegalSection[];
 }
 
-export const LEGAL_UPDATED = "21 September 2026";
+export const LEGAL_UPDATED = "23 September 2026";
 export const LEGAL_DISCLAIMER =
   "Plain-language product notice maintained by Telep IO — not legal advice.";
 
@@ -28,6 +28,7 @@ type LegalInput = {
   collects: string[];
   handlingHeading?: string;
   handling: string[];
+  retentionLead?: string;
   retentionExtra?: string;
   service: string[];
   extraTerms?: LegalSection[];
@@ -59,11 +60,12 @@ function metaIndependence(name: string, filing: MuseFiling): LegalSection {
   };
 }
 
-function retentionSection(extra?: string): LegalSection {
+function retentionSection(lead?: string, extra?: string): LegalSection {
   return {
     heading: "Retention",
     body: [
-      "Gateway state is in-memory and ephemeral: it disappears when the serverless instance recycles. There is no durable database on the gateway.",
+      lead ??
+        "Gateway state is in-memory and ephemeral: it disappears when the serverless instance recycles. There is no durable database on the gateway.",
       ...(extra ? [extra] : []),
     ],
   };
@@ -85,7 +87,7 @@ function buildLegal(input: LegalInput): ConnectorLegal {
         heading: input.handlingHeading ?? "What we do with it",
         body: input.handling,
       },
-      retentionSection(input.retentionExtra),
+      retentionSection(input.retentionLead, input.retentionExtra),
       KEYS_SECTION,
     ],
     terms: [
@@ -108,32 +110,34 @@ export const connectorLegal: Record<string, ConnectorLegal> = {
     name: "PaperSend",
     museFiling: "submitted",
     whatItDoes: [
-      "PaperSend turns a PDF into a physical letter: printed, put in an envelope, and mailed First Class in the US.",
-      "The Muse gateway job endpoints are stubs: creating a job does not mail anything, charge anyone, or call a print provider. Live printing and mailing are handled by the separate PaperSend application, not the gateway.",
+      "PaperSend turns a letter into physical mail: printed, put in an envelope, and mailed First Class in the US.",
+      "With PAPER_SEND_APP_MODE unset or demo, creating a job does not mail anything, charge anyone, or call Lob. Jobs are in-memory stubs.",
+      "With mode test or live, a Postgres URL, and Stripe and Lob keys, the gateway stores a durable draft. Lob is asked to send only after Stripe confirms payment. The gateway does not store PDF bytes; the letter Lob prints is HTML built from the job (filename and page count).",
     ],
     collects: [
-      "Document metadata you send us: filename and page count (1–5 pages). The gateway stub does not store PDF bytes.",
+      "Document metadata you send us: filename and page count (1–5 pages). The gateway does not store PDF bytes.",
       "Sender and recipient addresses: name, street address, city, state, ZIP — everything needed to address a letter.",
-      "Job metadata: timestamps, status, quoted price, and your API key identifier.",
+      "Job metadata: timestamps, status, quoted price, Stripe session id after checkout, Lob letter id after a successful send, and your API key identifier.",
     ],
     handling: [
-      "Gateway stub jobs go nowhere: they are stored in-memory on the gateway and never forwarded to a print or mail provider. No provider is wired to the gateway stubs today. If you use the separate PaperSend application, its own privacy notice governs how documents and addresses are handled there — the gateway and the app are different services.",
+      "Demo jobs stay on the gateway and are not sent to Lob. test/live jobs are stored in Postgres. After a verified Stripe payment, the gateway sends the addresses and an HTML letter to Lob to print and mail. Lob’s own terms and privacy policy apply to that letter. The separate PaperSend Express app is a different service and is not required for this path.",
     ],
-    retentionExtra:
-      "Do not submit live customer documents or addresses to the gateway stubs until a durable store and a provider contract exist.",
+    retentionLead:
+      "Demo mode keeps jobs in memory; they disappear when the serverless instance recycles. test and live require Postgres (DATABASE_URL or PAPER_SEND_DATABASE_URL) and store job metadata and addresses, not PDF bytes.",
+    retentionExtra: "After a successful send, Lob keeps the letter under Lob’s retention. A failed or unpaid job is not described as mailed.",
     service: [
-      "PaperSend is a PDF-to-physical-mail connector operated by Telep IO LLC. Through Muse, an agent can draft a mail job and read its status.",
-      "The gateway endpoints are stubs: creating a job does not print a letter, mail a letter, charge a card, or bind a mail provider. Actual fulfillment happens in the separate PaperSend application, which is a different service with its own terms.",
+      "PaperSend is a physical-mail connector operated by Telep IO LLC. Through Muse, an agent can draft a mail job and read its status.",
+      "Demo mode does not print, mail, or charge. In test or live, a human pays through Stripe Checkout; that payment is the gate. The gateway then asks Lob to send. Creating a draft does not mail anything.",
     ],
     pricing: [
-      "Planned pricing is $4.99 for the first page, $0.25 for each additional page, US letter, 1–5 pages. Prices are planned, not yet charged through the gateway. Live pricing is confirmed at the point of payment in the PaperSend application.",
+      "Price is $4.99 for the first page and $0.25 for each additional page, US letter, 1–5 pages. Demo checkout does not charge. A real charge happens only when STRIPE_SECRET_KEY is set and the human completes Checkout.",
     ],
     acceptableUse: [
       "No unsolicited bulk mail, fraud, harassment, or illegal content.",
-      "Agents may create drafts; humans must review the exact document, recipient, and price, and pay, before anything mails. The agent cannot and does not authorize mailing on its own.",
+      "Agents may create drafts. A human pays before Lob is asked to send. The agent does not hold the Lob key.",
     ],
     stub: [
-      "Everything on the gateway today is a demo. Gateway jobs are created with status “stubbed” (the type also allows draft/queued). Those labels do not mean a letter was mailed. Do not rely on gateway job status as proof of mailing. Mailed means confirmed by the PaperSend application or the mail provider — nothing else.",
+      "Demo jobs are created with status “stubbed” (the type also allows draft/queued/paid/submitted). “Stubbed” does not mean a letter was mailed. “Submitted” on a job means Lob accepted that letter. Catalog status “submitted” is Telep’s Meta filing status and is a different word. Do not treat a demo job as proof of mailing.",
     ],
     warranty: [
       "The service is provided as-is. Telep IO makes no guarantee that a gateway job will result in a mailed letter, or that any status shown is current.",

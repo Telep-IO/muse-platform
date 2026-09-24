@@ -20,8 +20,8 @@ export type CreateCtx = { keyId: string; catalogOrigin: string; live: boolean };
 type Resource<T> = {
   name: string;
   missing: string;
-  list: (ownerKeyId: string) => T[];
-  get: (id: string, ownerKeyId: string) => T | undefined;
+  list: (ownerKeyId: string) => T[] | Promise<T[]>;
+  get: (id: string, ownerKeyId: string) => T | undefined | Promise<T | undefined>;
   present: (item: T) => unknown;
   summaries: { list: string; create: string; get: string };
   schema: Record<string, unknown>;
@@ -31,6 +31,7 @@ type Resource<T> = {
   getTool?: { name: string; description: string };
   listTool?: { name: string; description: string };
   checkout?: { label: string; noun: string };
+  onCheckout?: (id: string, ownerKeyId: string, session: { id: string; mode: "live" | "stub" }) => Promise<void> | void;
   demo?: {
     summary: string;
     events: string[];
@@ -97,15 +98,17 @@ export function defineConnector<T>(def: ConnectorDef<T>) {
   ];
   if (resource.getTool) {
     tools.push(
-      mcpGetTool(resource.getTool.name, resource.getTool.description, resource.missing, (id, owner) => {
-        const item = resource.get(id, owner);
+      mcpGetTool(resource.getTool.name, resource.getTool.description, resource.missing, async (id, owner) => {
+        const item = await resource.get(id, owner);
         return item && resource.present(item);
       }),
     );
   }
   if (resource.listTool) {
     tools.push(
-      mcpListTool(resource.listTool.name, resource.listTool.description, resource.name, (owner) => resource.list(owner).map(resource.present)),
+      mcpListTool(resource.listTool.name, resource.listTool.description, resource.name, async (owner) =>
+        (await resource.list(owner)).map(resource.present),
+      ),
     );
   }
   for (const action of resource.actions ?? []) {
@@ -179,6 +182,7 @@ export function defineConnector<T>(def: ConnectorDef<T>) {
       present: resource.present,
       create: (body, auth) => runCreate(body, auth),
       checkout: resource.checkout,
+      onCheckout: resource.onCheckout,
       demoEvent: resource.demo ? (id, owner, event, body) => resource.demo!.run(id, owner, event, body) : undefined,
       actions: resource.actions
         ? Object.fromEntries(resource.actions.map((action) => [action.rest, (id: string, auth: AuthResult) => action.run(id, auth.keyId)]))

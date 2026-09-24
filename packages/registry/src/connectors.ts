@@ -27,7 +27,7 @@ export const connectors: Connector[] = [
       "Show me all my recent mail jobs.",
     ],
     productNotes:
-      "First Telep connector submitted to Meta’s Muse Connector Platform. Gateway jobs are stubs until the mail provider is wired here; live print still lives in the PaperSend app. Status ‘submitted’ means Telep filed the connector for Meta review — it is not a Meta partnership, endorsement, or directory listing.",
+      "First Telep connector submitted to Meta’s Muse Connector Platform. Demo mode stores an in-memory stub and does not mail. With Postgres, Stripe, and a Lob key, test/live keeps a durable draft and asks Lob to send only after the Stripe webhook confirms payment. The gateway does not store PDF bytes. Status ‘submitted’ means Telep filed the connector for Meta review — it is not a Meta partnership, endorsement, or directory listing.",
     gatewayImplemented: true,
   },
   {

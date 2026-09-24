@@ -80,12 +80,12 @@ Do not list BarkMarks or CallCatch as catalog heroes.
 
 ## Stripe
 
-`packages/platform` exposes Checkout session create + webhook verification. They stay in **stub mode** unless `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are set. Use Stripe test mode until a connector is actually charging.
+`packages/platform` exposes Checkout session create + webhook verification. They stay in **stub mode** unless `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are set. Use Stripe test mode until a connector is actually charging. For PaperSend, a verified paid Checkout webhook marks the job paid and, when `PAPER_SEND_APP_MODE` is `test` or `live`, asks Lob to send. Demo mode does not.
 
 ## Honesty
 
 - Telep connectors are independent software. Meta’s Muse Connector Platform is Meta’s product.
-- With `PAPER_SEND_APP_MODE` unset or `demo`, PaperSend jobs are in-memory stubs. `test`/`live` can verify a Lob key and store a draft. This gateway does not call Lob to create a letter.
+- With `PAPER_SEND_APP_MODE` unset or `demo`, PaperSend jobs are in-memory stubs and Lob is never called. `test`/`live` requires `DATABASE_URL` or `PAPER_SEND_DATABASE_URL`. A draft still does not mail. After a verified Stripe `checkout.session.completed` webhook, this gateway asks Lob to send. That does not require deploying `services/paper-send`.
 - With `SUMVID_APP_MODE` unset or `demo`, summaries are hashed from the YouTube video id. `test`/`live` calls `POST {SUMVID_API_BASE_URL}/v1/summaries`.
 - With `SHIPSIGNAL_APP_MODE` unset or `demo`, timelines are hashed from the tracking number. `test`/`live` calls AfterShip, Shippo, or EasyPost. No postage is purchased.
 - Rate limiting is an in-memory stub. Replace before production load.

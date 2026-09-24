@@ -31,7 +31,7 @@ export interface ConnectorDocs {
 const NOTES: Record<string, { demoNote: string; createEndpoint: string; createExampleBody: string }> = {
   "paper-send": {
     demoNote:
-      "Demo gateway: creating a job does not print, mail, or charge anything. Jobs are created with status “stubbed”. The live print-and-mail app lives in services/paper-send in this repository; provider fulfillment is not wired into this gateway.",
+      "Demo (the default): creating a job does not print, mail, or charge. Status is “stubbed”, in memory, and Lob is never called. With Postgres, Stripe, and a Lob key, set PAPER_SEND_APP_MODE to test or live: the draft is durable, and Lob sends only after the Stripe webhook confirms payment. The gateway does not store PDF bytes; Lob receives HTML built from the job. No separate Express deploy is required for that path.",
     createEndpoint: "/v1/paper-send/jobs",
     createExampleBody:
       '{"sender":{"name":"example","address_line1":"example","address_city":"example","address_state":"example","address_zip":"example"},"recipient":{"name":"example","address_line1":"example","address_city":"example","address_state":"example","address_zip":"example"}}',

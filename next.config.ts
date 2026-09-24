@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     "@telep/sumvid",
     "@telep/shipsignal",
   ],
-  serverExternalPackages: ["stripe"],
+  serverExternalPackages: ["stripe", "pg"],
   poweredByHeader: false,
 };
 
