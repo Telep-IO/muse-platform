@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@telep/paper-send": "*",
+    "@telep/gift-send": "*",
     "@telep/ship-label": "*",
     "@telep/sign-send": "*",
     "@telep/fax-send": "*",

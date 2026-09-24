@@ -1,6 +1,7 @@
 import { authenticate, emptySpec, isWriteMethod, jsonError, mergeOpenApi, publicApiUrl, rateLimit, rateLimitHeaders, withCors, type AuthResult, type OpenApiDocument } from "@telep/platform";
 import { connectorCount, getConnector, listConnectors } from "@telep/registry";
 import { handlePaperSendMcp, handlePaperSendRest, paperSendOpenApi } from "@telep/paper-send";
+import { handleGiftSendMcp, handleGiftSendRest, giftSendOpenApi } from "@telep/gift-send";
 import { handleShipLabelMcp, handleShipLabelRest, shipLabelOpenApi } from "@telep/ship-label";
 import { handleSignSendMcp, handleSignSendRest, signSendOpenApi } from "@telep/sign-send";
 import { handleFaxSendMcp, handleFaxSendRest, faxSendOpenApi } from "@telep/fax-send";
@@ -16,6 +17,7 @@ type McpHandler = (request: Request) => Promise<Response>;
 const modules: Record<string, { rest: RestHandler; mcp: McpHandler; openapi: () => OpenApiDocument }> = {
   "paper-send": { rest: handlePaperSendRest, mcp: handlePaperSendMcp, openapi: paperSendOpenApi },
   "ship-label": { rest: handleShipLabelRest, mcp: handleShipLabelMcp, openapi: shipLabelOpenApi },
+  "gift-send": { rest: handleGiftSendRest, mcp: handleGiftSendMcp, openapi: giftSendOpenApi },
   "sign-send": { rest: handleSignSendRest, mcp: handleSignSendMcp, openapi: signSendOpenApi },
   "fax-send": { rest: handleFaxSendRest, mcp: handleFaxSendMcp, openapi: faxSendOpenApi },
   "call-send": { rest: handleCallSendRest, mcp: handleCallSendMcp, openapi: callSendOpenApi },
@@ -52,7 +54,8 @@ export function platformOpenApi() {
     },
     "/v1/billing/webhook": {
       post: {
-        summary: "Stripe webhook. ShipLabel buys postage only after payment_status paid. Other connectors are acknowledged.",
+        summary:
+          "Stripe webhook. ShipLabel buys postage and GiftSend places a Tremendous order only after payment_status paid. Other connectors are acknowledged.",
         responses: { "200": { description: "OK" } },
       },
     },

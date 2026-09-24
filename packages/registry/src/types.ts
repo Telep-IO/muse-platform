@@ -14,6 +14,7 @@ export const CONNECTOR_CATEGORIES = [
   "documents",
   "communications",
   "identity",
+  "rewards",
 ] as const;
 
 export type ConnectorCategory = (typeof CONNECTOR_CATEGORIES)[number];
@@ -51,4 +52,5 @@ export const CATEGORY_LABELS: Record<ConnectorCategory, string> = {
   documents: "Documents",
   communications: "Communications",
   identity: "Identity",
+  rewards: "Rewards",
 };

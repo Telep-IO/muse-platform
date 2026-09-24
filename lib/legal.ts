@@ -499,6 +499,104 @@ export const connectorLegal: Record<string, ConnectorLegal> = {
       },
     ],
   },
+
+  "gift-send": {
+    privacy: [
+      {
+        heading: "What GiftSend does",
+        body: [
+          "GiftSend drafts a digital gift card, Visa or Mastercard prepaid reward, or charity reward. A person reviews the recipient, amount, and message, then pays the face value plus a service fee through Stripe. Tremendous delivers the reward by email, text, or link.",
+          "Demo mode is a stub. It does not contact Tremendous or Stripe, including Tremendous's free sandbox.",
+        ],
+      },
+      {
+        heading: "What we collect",
+        body: [
+          "- Recipient name, email, and/or phone number, the reward, amount, personal message, and delivery method.",
+          "- The Stripe payment reference, Tremendous order id, reward id, and delivery link after a paid order.",
+          "- Standard web logs (IP, user agent, request path) from the host/CDN.",
+          "- We do not sell personal information or run advertising pixels. We do not receive full card numbers. Cash-payout destinations are not collected in this version.",
+        ],
+      },
+      {
+        heading: "What we do with it",
+        body: [
+          "In test and live mode, product lists are read-only Tremendous catalog calls. Creating a draft does not place an order. After Stripe reports payment_status paid, recipient and reward details are sent to Tremendous so it can deliver the reward.",
+          "Demo mode keeps the draft in the connector's local store and does not send it to Tremendous or Stripe. The fulfillment service, when used, stores drafts and claims in its own database (SQLite locally, Postgres in production).",
+        ],
+      },
+      {
+        heading: "Retention",
+        body: [
+          "Paid drafts and claim rows are kept so a retry cannot place a second reward and so delivery status can be read back. Contact jon@telep.io about access or deletion. Deletion cannot recall a reward the recipient has already redeemed.",
+        ],
+      },
+      {
+        heading: "Keys",
+        body: [
+          "Bearer API keys authenticate agents. Treat them as secrets. Telep IO can revoke a key by removing it from the gateway configuration.",
+        ],
+      },
+    ],
+    terms: [
+      {
+        heading: "The service",
+        body: [
+          "GiftSend is a digital reward connector operated by Telep IO LLC. An agent may draft a gift. A human reviews it and pays. Tremendous sends the reward only after that payment.",
+        ],
+      },
+      {
+        heading: "Tremendous agreement",
+        body: [
+          "End users receive Tremendous rewards through Telep's Platform Client relationship. The Tremendous Corporate Client Service Agreement (https://www.tremendous.com/terms/) is incorporated into these terms, as Platform Client Terms §1.3 requires. Platform Client Terms: https://www.tremendous.com/platform-client-terms/. Live mode is not available until Telep completes Platform Client registration with Tremendous Sales. A self-serve API key is not a license to resell rewards.",
+        ],
+      },
+      {
+        heading: "Gift cards, prepaid, and charity only",
+        body: [
+          "Launch scope is digital gift cards, Visa and Mastercard prepaid, and charity. Venmo, PayPal, ACH, bank, and other cash payouts are disabled. Enabling them requires a separate money-transmission review.",
+        ],
+      },
+      {
+        heading: "Pricing",
+        body: [
+          "The customer total is the reward face value plus a service fee. The default service fee is $2.99. Face value is a pass-through. Tremendous's published fee on gift cards, Visa/Mastercard prepaid, and charity is $0. The Tremendous balance is prefunded by bank ACH. GiftSend does not auto-fund that balance by credit card.",
+        ],
+      },
+      {
+        heading: "Cancellation",
+        body: [
+          "A reward can be cancelled before the recipient redeems it. Tremendous returns HTTP 422 when a reward is already redeemed, and GiftSend reports that refusal. The service fee is not refunded after Tremendous has accepted the order. Demo cancels do not contact Tremendous.",
+        ],
+      },
+      {
+        heading: "Acceptable use",
+        body: [
+          "- No sharing of API keys.",
+          "- No fraud, and no rewards you are not allowed to send.",
+          "- Agents may draft and read status. Humans review the amount and pay before a reward is sent.",
+        ],
+      },
+      {
+        heading: "Demo / stub status",
+        body: [
+          "Demo mode is a stub: the catalog and checkout URL are placeholders. A stub draft is not a sent reward. Do not treat demo status as proof that Tremendous delivered anything.",
+        ],
+      },
+      {
+        heading: "Meta independence",
+        body: [
+          "Telep IO is independent of Meta. Listing here is not a claim that Meta approved, featured, or partnered on GiftSend. This connector is prepared for Muse submission; filing is not approval.",
+        ],
+      },
+      {
+        heading: "No warranty",
+        body: [
+          "The service is provided as-is. Telep IO does not guarantee that a recipient can redeem a reward, or that a cancellation will be accepted after delivery.",
+        ],
+      },
+    ],
+  },
 };
 
 export function getConnectorLegal(slug: string): ConnectorLegal | undefined {
