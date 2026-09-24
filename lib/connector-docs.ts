@@ -19,6 +19,11 @@ export interface ConnectorToolDoc {
   params: ConnectorToolParamDoc[];
 }
 
+export interface ConnectorDocsSection {
+  heading: string;
+  paragraphs: string[];
+}
+
 export interface ConnectorDocs {
   /** Honest stub disclosure shown at the top of the docs page. */
   demoNote: string;
@@ -26,10 +31,109 @@ export interface ConnectorDocs {
   createEndpoint: string;
   /** Pretty-printed JSON example body for the create endpoint. */
   createExampleBody: string;
+  /** Replaces the generic stub-billing sentence when the connector charges after payment. */
+  billingNote?: string;
+  extraSections?: ConnectorDocsSection[];
   tools: ConnectorToolDoc[];
 }
 
 const DOCS: Record<string, ConnectorDocs> = {
+  "ship-label": {
+    demoNote:
+      "Demo mode returns stub USPS rates and a stub label. It does not call EasyPost or Stripe, and a stub label is not postage. Test and live rate-shop USPS through EasyPost before payment (that does not buy postage). EasyPost buys the label only after Stripe reports payment_status paid.",
+    createEndpoint: "/v1/ship-label/shipments",
+    createExampleBody:
+      "{\n  \"from\": {\n    \"name\": \"Ada Sender\",\n    \"address_line1\": \"185 Berry St\",\n    \"address_city\": \"San Francisco\",\n    \"address_state\": \"CA\",\n    \"address_zip\": \"94107\"\n  },\n  \"to\": {\n    \"name\": \"Grace Recipient\",\n    \"address_line1\": \"1 Telegraph Hill Blvd\",\n    \"address_city\": \"San Francisco\",\n    \"address_state\": \"CA\",\n    \"address_zip\": \"94133\"\n  },\n  \"parcel\": {\n    \"weight_oz\": 16,\n    \"length_in\": 10,\n    \"width_in\": 6,\n    \"height_in\": 4\n  }\n}",
+    billingNote:
+      "Customer total = EasyPost USPS postage for the selected rate + a $1.99 service fee (SERVICE_FEE_CENTS, default 199). Postage is a pass-through. Demo mode does not bill.",
+    extraSections: [
+      {
+        heading: "What ShipLabel does",
+        paragraphs: [
+          "ShipLabel lets Muse draft a USPS shipping label from sender, recipient, and parcel details. You review the carrier rate, pay postage plus a service fee through Stripe, and EasyPost purchases and issues the label with tracking.",
+          "Tools: create_shipment_draft, get_shipment_rates, buy_shipping_label, get_label, cancel_label, list_shipments, and check_credentials. buy_shipping_label opens checkout. It does not buy postage.",
+        ],
+      },
+      {
+        heading: "Modes",
+        paragraphs: [
+          "demo: offline stubs. Zero HTTP to EasyPost, its sandbox, or Stripe.",
+          "test: EasyPost test key and Stripe test key. Buy runs only on a paid webhook.",
+          "live: Forge production credentials. Live mode does not boot on the fulfillment service until EASYPOST_ORDER_FORM_REFERENCE is set. A self-serve Developer Plan key is not live-ready. Forge enrollment with EasyPost sales is still required.",
+        ],
+      },
+      {
+        heading: "Pricing",
+        paragraphs: [
+          "total = postage from the selected EasyPost USPS rate, read at runtime, plus the configured service fee. The default fee is $1.99. The Forge per-label platform fee is a separate config value from the Order Form and is not hardcoded. FlexRate, if any, is applied by Forge before the rate we see. This connector does not add a second markup on top of postage.",
+        ],
+      },
+      {
+        heading: "USPS only",
+        paragraphs: [
+          "CARRIER_ALLOWLIST is USPS at both the gateway and the fulfillment service. UPS is excluded because UPS DAP §4.2 does not permit marking up UPS rates to resell labels to another entity or End User, and UPS DAP §4.5 requires a direct UPS agreement plus UPS written consent before a platform enrolls end users. FedEx is excluded because FedEx by Default §3.2 does not permit selling, assigning, or transferring the benefit of pricing to any other party.",
+        ],
+      },
+      {
+        heading: "Void and refunds",
+        paragraphs: [
+          "cancel_label asks EasyPost to refund the shipment. USPS decides whether unused postage comes back. A label that has already been scanned is generally not voidable. The ShipLabel service fee is not refunded once the label has been purchased. Demo cancels do not contact EasyPost.",
+        ],
+      },
+      {
+        heading: "EasyPost",
+        paragraphs: [
+          "Labels are purchased through EasyPost (Forge for live resale). ShipLabel is not EasyPost and not USPS. Tracking codes are the carrier codes EasyPost returns. EasyPost API reference: https://docs.easypost.com. Forge overview: https://support.easypost.com/hc/en-us/articles/34176670288013-Introduction-to-Forge.",
+        ],
+      },
+    ],
+    tools: [
+      {
+        name: "create_shipment_draft",
+        description:
+          "Draft a USPS label. Returns rates and a quote. Does not buy postage. Demo mode does not call EasyPost.",
+        params: [
+          { name: "from", type: "object", required: true, description: "Sender postal address" },
+          { name: "to", type: "object", required: true, description: "Recipient postal address" },
+          { name: "parcel", type: "object", required: true, description: "weight_oz, length_in, width_in, height_in" },
+          { name: "carrier_hint", type: "string", required: false, description: "Optional. Only USPS is accepted." },
+        ],
+      },
+      {
+        name: "get_shipment_rates",
+        description: "Re-list USPS rates for a draft. Does not buy postage.",
+        params: [{ name: "draft_id", type: "string", required: true, description: "" }],
+      },
+      {
+        name: "buy_shipping_label",
+        description: "Create one Stripe checkout for a draft and rate. Does not buy postage. Repeat calls return 409.",
+        params: [
+          { name: "draft_id", type: "string", required: true, description: "" },
+          { name: "rate_id", type: "string", required: true, description: "A USPS rate id from the draft" },
+        ],
+      },
+      {
+        name: "get_label",
+        description: "Return label_url, tracking_code, and status.",
+        params: [{ name: "label_id", type: "string", required: true, description: "" }],
+      },
+      {
+        name: "cancel_label",
+        description: "Void a label through EasyPost in test/live. Demo mode does not call EasyPost.",
+        params: [{ name: "label_id", type: "string", required: true, description: "" }],
+      },
+      {
+        name: "list_shipments",
+        description: "List drafts created with this API key.",
+        params: [],
+      },
+      {
+        name: "check_credentials",
+        description: "Read-only EasyPost auth check. Does not buy postage. Demo mode skips the provider.",
+        params: [],
+      },
+    ],
+  },
   "paper-send": {
     demoNote: "Demo gateway: creating a job does not print, mail, or charge anything. Jobs are created with status “stubbed”. The live print-and-mail app lives in services/paper-send in this repository; provider fulfillment is not wired into this gateway.",
     createEndpoint: "/v1/paper-send/jobs",

@@ -32,7 +32,10 @@ export default async function ConnectorDocsPage({
   const mcpUrl = apiUrl(connector.mcpPath);
   const restBase = apiUrl(connector.apiBasePath);
   const openapiUrl = apiUrl(`${connector.apiBasePath}/openapi.json`);
-  const createUrl = apiUrl(`${connector.apiBasePath}${docs.createEndpoint}`);
+  const createPath = docs.createEndpoint.startsWith("/v1/")
+    ? docs.createEndpoint
+    : `${connector.apiBasePath}${docs.createEndpoint}`;
+  const createUrl = apiUrl(createPath);
 
   const mcpExample = JSON.stringify(
     { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} },
@@ -146,9 +149,21 @@ export default async function ConnectorDocsPage({
         <h2>Demo status</h2>
         <p className="prose">{docs.demoNote}</p>
         <p className="prose">
-          Pricing: {connector.pricingBlurb} Nothing is billed while the gateway is a stub.
+          Pricing: {connector.pricingBlurb}{" "}
+          {docs.billingNote ?? "Nothing is billed while the gateway is a stub."}
         </p>
       </section>
+
+      {docs.extraSections?.map((section) => (
+        <section className="section" key={section.heading}>
+          <h2>{section.heading}</h2>
+          {section.paragraphs.map((paragraph) => (
+            <p className="prose" key={paragraph}>
+              {paragraph}
+            </p>
+          ))}
+        </section>
+      ))}
 
       <section className="section">
         <h2>Related</h2>

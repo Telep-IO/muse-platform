@@ -31,6 +31,31 @@ export const connectors: Connector[] = [
     gatewayImplemented: true,
   },
   {
+    slug: "ship-label",
+    name: "ShipLabel",
+    oneLiner: "Draft a USPS shipping label, review the rate, and pay postage plus a service fee.",
+    status: "submitted",
+    category: "logistics",
+    pricingBlurb: "USPS postage at the EasyPost rate plus a $1.99 service fee. USPS only.",
+    repoUrl: "https://github.com/Telep-IO/muse-platform/tree/main/services/ship-label",
+    docsPath: "/connectors/ship-label/docs",
+    apiBasePath: "/v1/ship-label",
+    mcpPath: "/mcp/ship-label",
+    privacyPath: "/connectors/ship-label/privacy",
+    termsPath: "/connectors/ship-label/terms",
+    howMuseUsesIt:
+      "Muse drafts a USPS label from the sender, recipient, and parcel. You review the carrier rate and pay postage plus a service fee. EasyPost buys the label only after that payment. The agent never buys postage on its own.",
+    examplePrompts: [
+      "Draft a USPS label from my shop to this customer. The box is 2 pounds, 10 by 6 by 4 inches. Show me the rate before anyone pays.",
+      "What would this USPS shipment cost, including the service fee?",
+      "Open checkout for the Priority rate on that draft. Do not buy the label yourself.",
+      "Has the label been issued, and what is the tracking code?",
+    ],
+    productNotes:
+      "Catalog status uses the same pre-listing value as PaperSend (submitted). That badge is not Meta approval, and this change does not file the connector. Demo mode returns stub rates and labels and does not call EasyPost or Stripe. Live labels require Forge enrollment with EasyPost sales; a Developer Plan key is not accepted as live-ready. USPS only — UPS and FedEx are excluded because their programs prohibit third-party resale markups.",
+    gatewayImplemented: true,
+  },
+  {
     slug: "sumvid",
     name: "Sumvid",
     oneLiner: "Summarize YouTube and other videos for Muse.",

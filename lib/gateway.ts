@@ -1,6 +1,7 @@
 import { authenticate, emptySpec, isWriteMethod, jsonError, mergeOpenApi, publicApiUrl, rateLimit, rateLimitHeaders, withCors, type AuthResult } from "@telep/platform";
 import { connectorCount, getConnector, listConnectors } from "@telep/registry";
 import { handlePaperSendMcp, handlePaperSendRest, paperSendOpenApi } from "@telep/paper-send";
+import { handleShipLabelMcp, handleShipLabelRest, shipLabelOpenApi } from "@telep/ship-label";
 import { handleSignSendMcp, handleSignSendRest, signSendOpenApi } from "@telep/sign-send";
 import { handleFaxSendMcp, handleFaxSendRest, faxSendOpenApi } from "@telep/fax-send";
 import { handleCallSendMcp, handleCallSendRest, callSendOpenApi } from "@telep/call-send";
@@ -14,6 +15,7 @@ type McpHandler = (request: Request) => Promise<Response>;
 
 const restHandlers: Record<string, RestHandler> = {
   "paper-send": handlePaperSendRest,
+  "ship-label": handleShipLabelRest,
   "sign-send": handleSignSendRest,
   "fax-send": handleFaxSendRest,
   "call-send": handleCallSendRest,
@@ -25,6 +27,7 @@ const restHandlers: Record<string, RestHandler> = {
 
 const mcpHandlers: Record<string, McpHandler> = {
   "paper-send": handlePaperSendMcp,
+  "ship-label": handleShipLabelMcp,
   "sign-send": handleSignSendMcp,
   "fax-send": handleFaxSendMcp,
   "call-send": handleCallSendMcp,
@@ -71,6 +74,7 @@ export function platformOpenApi() {
   spec.tags = [{ name: "platform", description: "Gateway" }];
   return mergeOpenApi(spec, [
     paperSendOpenApi(),
+    shipLabelOpenApi(),
     signSendOpenApi(),
     faxSendOpenApi(),
     callSendOpenApi(),

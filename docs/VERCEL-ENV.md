@@ -48,6 +48,24 @@ Maps to `services/paper-send/.env.example` (`APP_MODE`, `LOB_API_KEY`, `LOB_AUTH
 | `PAPER_SEND_DATABASE_URL` | `DATABASE_URL` (optional on Vercel; required on the Express deploy) |
 | `PAPER_SEND_SERVICE_URL` | optional proxy base URL; no Express equivalent |
 
+### ShipLabel
+
+Maps to `services/ship-label/.env.example`. The gateway does not import that app. In `test` or `live`, shipment drafts, checkout, and voids are HTTP calls to `SHIP_LABEL_SERVICE_URL`. Demo does not call that URL, EasyPost, or Stripe.
+
+Postage is the EasyPost USPS rate at draft time. `SHIP_LABEL_SERVICE_FEE_CENTS` defaults to `199` ($1.99). Leave `SHIP_LABEL_EASYPOST_PLATFORM_FEE_CENTS` empty until the Forge Order Form names the platform fee. Do not set `SHIP_LABEL_APP_MODE=live` until `SHIP_LABEL_EASYPOST_ORDER_FORM_REFERENCE` is the real Forge reference. A Developer Plan key is not a live credential.
+
+| Vercel name | Express name |
+| --- | --- |
+| `SHIP_LABEL_APP_MODE` | `APP_MODE` — `demo` by default |
+| `SHIP_LABEL_EASYPOST_API_KEY` | `EASYPOST_API_KEY` |
+| `SHIP_LABEL_EASYPOST_ORDER_FORM_REFERENCE` | `EASYPOST_ORDER_FORM_REFERENCE` |
+| `SHIP_LABEL_EASYPOST_PLATFORM_FEE_CENTS` | `EASYPOST_PLATFORM_FEE_CENTS` |
+| `SHIP_LABEL_SERVICE_FEE_CENTS` | `SERVICE_FEE_CENTS` |
+| `SHIP_LABEL_DATABASE_URL` | `DATABASE_URL` |
+| `SHIP_LABEL_SERVICE_URL` | no Express equivalent; the gateway's base URL for the service |
+
+Shared `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SUCCESS_URL`, and `STRIPE_CANCEL_URL` are the Stripe values. The Express process reads those same unprefixed names.
+
 ### Sumvid
 
 There is no `services/sumvid` tree and no sumvid-muse README in this repository (the registry links `Telep-IO/sumvid-muse`). `test`/`live` calls `POST {SUMVID_API_BASE_URL}/v1/summaries` with `Authorization: Bearer {SUMVID_API_KEY}` and JSON `{ youtubeUrl, videoId, language }`. `GET /v1/account` is the credential check. A 402 or `error.code` of `insufficient_credits` is returned with `topUpUrl` when Sumvid sends one.

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Privacy · ShipLabel</title></head>
+<body>
+<main>
+<h1>ShipLabel privacy notice</h1>
+<p>Effective 24 September 2026. ShipLabel is operated by Telep IO. Contact: jon@telep.io.</p>
+<h2>What ShipLabel does</h2>
+<p>ShipLabel drafts a USPS shipping label from a sender address, a recipient address, and parcel dimensions. A person reviews the USPS rate and pays postage plus a service fee. EasyPost then purchases and issues the label. Demo mode stores the draft and returns stub rates and labels. Demo mode does not contact EasyPost or Stripe.</p>
+<h2>What we collect</h2>
+<p>Sender and recipient names and US postal addresses, parcel weight and dimensions, the selected USPS service, quoted postage, the service fee, Stripe payment references, the EasyPost shipment id, label URL, and tracking code. We do not receive full card numbers. Stripe collects payment details under its own policy.</p>
+<h2>Who receives it</h2>
+<p>In test and live mode, addresses and parcel details are sent to EasyPost when the draft is created so EasyPost can return USPS rates. Creating that shipment does not buy postage. After Stripe reports <code>payment_status</code> paid, EasyPost receives the buy request and returns the label and tracking code. UPS and FedEx are not requested. Demo mode sends nothing to EasyPost or Stripe.</p>
+<p>The fulfillment service stores drafts, checkout session ids, and claim rows in SQLite (local demo and test) or Postgres (production). Use a separate database for each mode.</p>
+<h2>Retention</h2>
+<p>Drafts and labels are kept so a paid shipment can be retried safely and so you can fetch the label and tracking code. Contact jon@telep.io to ask about access or deletion. Deletion cannot recall a label EasyPost has already bought or a package USPS has already accepted.</p>
+</main>
+</body>
+</html>
