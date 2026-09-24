@@ -25,7 +25,7 @@ Platform-wide footer notices (`/privacy`, `/terms`) still exist. **Do not paste 
 1. Merge this PR, wait for the Vercel production deploy, then open each privacy and terms URL once to confirm they resolve.
 2. For each connector below, open the Muse “Submit a connector” form and paste the values. Fields marked ⚠️ are human decisions only you can make.
 3. Upload the icon from `docs/muse-connector/icons/{slug}.png` (all 8 are 512×512 RGB PNG).
-4. Connection type for **all 8: Existing MCP**. Use MCP only because `gatewayImplemented` is `true` for every catalog entry and each `/mcp/{slug}` endpoint is live (streamable-HTTP JSON-RPC). If a future connector is catalog-only, do not select Existing MCP.
+4. Connection type for **all 8: Existing MCP**. Use MCP because every catalog entry is derived from a gateway module in `connectors/index.ts` and each `/mcp/{slug}` endpoint is live (streamable-HTTP JSON-RPC). If a future connector is catalog-only, do not select Existing MCP.
 5. Read the three Step-3 checkboxes and the Muse Connector Terms yourself before submitting.
 
 ## Global values (same for all 8)
@@ -232,4 +232,4 @@ Do not mark this submitted until Jon files it. Forge enrollment is not complete,
 
 ## Honest readiness note
 
-All 8 MCP endpoints are implemented on this gateway (`gatewayImplemented: true`). The five *-send connectors plus PaperSend are **honest demo stubs** (no provider fulfillment wired yet); Sumvid/ShipSignal are demo stubs too. Meta performs functional + end-to-end testing, so approval is not guaranteed on stub status — the packets disclose this everywhere rather than hiding it. That was a deliberate call: start the review clock with full disclosure, wire providers as keys land.
+All 8 MCP endpoints are implemented on this gateway (the catalog is derived from the gateway modules). The five *-send connectors plus PaperSend are **honest demo stubs** (no provider fulfillment wired yet); Sumvid/ShipSignal are demo stubs too. Meta performs functional + end-to-end testing, so approval is not guaranteed on stub status — the packets disclose this everywhere rather than hiding it. That was a deliberate call: start the review clock with full disclosure, wire providers as keys land.

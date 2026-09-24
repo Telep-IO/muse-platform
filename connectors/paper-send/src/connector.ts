@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector, documentPages, postalAddress } from "@telep/platform";
 import { createJob, getJob, listJobs, publicJob } from "./jobs";
 import { assertPaperReady, checkPaper, paperDescriptor, paperRuntime, quotePaper } from "./provider";
@@ -6,6 +7,7 @@ const paper = defineConnector({
   slug: "paper-send",
   name: "PaperSend",
   status: "submitted",
+  listing,
   descriptor: paperDescriptor,
   gate: () => ({ mode: paperRuntime().mode, ready: () => assertPaperReady() }),
   check: {
@@ -68,3 +70,5 @@ export const handlePaperSendRest = paper.rest;
 export const handlePaperSendMcp = paper.mcp;
 export const paperSendOpenApi = paper.openapi;
 export const paperSendTools = paper.tools;
+
+export default paper;

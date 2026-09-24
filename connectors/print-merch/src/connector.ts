@@ -1,3 +1,5 @@
+import { fulfillPrintMerchPayment } from "./fulfill";
+import { listing } from "./listing";
 import { HttpError, defineConnector, errorResponse, mcpAuth, unauthorized, withCors, type McpTool } from "@telep/platform";
 import {
   cancelMerchOrder,
@@ -77,6 +79,8 @@ const printMerch = defineConnector({
   slug: "print-merch",
   name: "PrintMerch",
   status: "submitted",
+  listing,
+  fulfill: (session, webhook) => fulfillPrintMerchPayment(session, webhook),
   price: "Live Printify base + shipping + configured markup (default 25%).",
   limits: "Quantity 1–50. Production only after Stripe payment_status is paid. Shop order approval must be manual.",
   descriptor: printMerchDescriptor,
@@ -266,3 +270,5 @@ export const handlePrintMerchRest = printMerch.rest;
 export const handlePrintMerchMcp = printMerch.mcp;
 export const printMerchOpenApi = printMerch.openapi;
 export const printMerchTools = printMerch.tools;
+
+export default printMerch;

@@ -1,8 +1,5 @@
-import { mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
-import { createCheckoutSession, envValue, HttpError, providerRequest, readAppMode, type Env } from "@telep/platform";
+import type { DatabaseSync } from "node:sqlite";
+import { withSqlite, createCheckoutSession, envValue, HttpError, providerRequest, readAppMode, type Env } from "@telep/platform";
 import { assertGiftSendReady } from "./provider";
 
 /** Tremendous fee on gift cards, Visa/Mastercard prepaid, and charity. */
@@ -219,14 +216,7 @@ function recipientOf(input: unknown, method: string): { email: string | null; ph
   };
 }
 
-function openDb(env: Env): DatabaseSync {
-  const mode = readAppMode("GIFT_SEND_APP_MODE", env);
-  const root = envValue("GIFT_SEND_DATA_DIR", env) || join(tmpdir(), "muse-gift-send");
-  const file = join(root, mode, "giftsend.sqlite");
-  mkdirSync(dirname(file), { recursive: true });
-  const db = new DatabaseSync(file);
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+const SCHEMA = `
     CREATE TABLE IF NOT EXISTS drafts (
       id TEXT PRIMARY KEY,
       owner_key TEXT NOT NULL,
@@ -252,23 +242,10 @@ function openDb(env: Env): DatabaseSync {
       created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS drafts_recipient ON drafts(recipient_key, created_at);
-  `);
-  const stored = db.prepare("SELECT value FROM settings WHERE key='mode'").get() as { value: string } | undefined;
-  if (stored && stored.value !== mode) {
-    db.close();
-    throw new HttpError(500, "mode_mismatch", "Use a separate DATA_DIR for each GIFT_SEND_APP_MODE.");
-  }
-  db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('mode', ?)").run(mode);
-  return db;
-}
+`;
 
 function withDb<T>(env: Env, fn: (db: DatabaseSync) => T): T {
-  const db = openDb(env);
-  try {
-    return fn(db);
-  } finally {
-    db.close();
-  }
+  return withSqlite("gift-send", SCHEMA, env, fn);
 }
 
 function rowGift(row: DraftRow, env: Env): Gift {

@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector, postalAddress } from "@telep/platform";
 import { CARDS, MAX_MESSAGE_CHARS, createLetter, demoEvent, getLetter, listLetters, publicLetter } from "./letters";
 import { assertInkReady, checkInk, inkDescriptor, inkRuntime, quoteInk } from "./provider";
@@ -6,6 +7,7 @@ const ink = defineConnector({
   slug: "ink-send",
   name: "InkSend",
   status: "planned",
+  listing,
   price: "$3.99 per letter",
   limits: "cards: plain, thank-you, condolence, holiday",
   descriptor: inkDescriptor,
@@ -78,3 +80,5 @@ export const handleInkSendRest = ink.rest;
 export const handleInkSendMcp = ink.mcp;
 export const inkSendOpenApi = ink.openapi;
 export const inkSendTools = ink.tools;
+
+export default ink;

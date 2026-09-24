@@ -1,3 +1,4 @@
+export { default } from "./connector";
 export { fulfillShipLabelPayment, handleShipLabelMcp, handleShipLabelRest, shipLabelOpenApi, shipLabelTools } from "./connector";
 export { assertShipLabelReady, checkShipLabel, quoteShipLabel, shipLabelDescriptor, shipLabelRuntime } from "./provider";
 export {

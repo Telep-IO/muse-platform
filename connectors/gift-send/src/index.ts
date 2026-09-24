@@ -1,3 +1,4 @@
+export { default } from "./connector";
 export { fulfillGiftSendPayment, giftSendOpenApi, giftSendTools, handleGiftSendMcp, handleGiftSendRest } from "./connector";
 export { assertGiftSendReady, checkGiftSend, giftSendDescriptor, giftSendRuntime, quoteGiftSend } from "./provider";
 export {

@@ -20,23 +20,50 @@ export const CONNECTOR_CATEGORIES = [
 
 export type ConnectorCategory = (typeof CONNECTOR_CATEGORIES)[number];
 
-export type Connector = {
-  slug: string;
-  name: string;
+export type LegalSection = {
+  heading: string;
+  /** Paragraphs; items starting with "- " render as bullet list items. */
+  body: string[];
+};
+
+export type ConnectorLegal = { privacy: LegalSection[]; terms: LegalSection[] };
+
+export type ConnectorDocsSection = { heading: string; paragraphs: string[] };
+
+/** Copy for /connectors/{slug}/docs. Tool reference is generated from the MCP tools. */
+export type ConnectorDocsNotes = {
+  demoNote: string;
+  createEndpoint: string;
+  createExampleBody: string;
+  /** Replaces the generic stub-billing sentence when the connector charges after payment. */
+  billingNote?: string;
+  extraSections?: ConnectorDocsSection[];
+  disclosures?: string[];
+};
+
+/** Everything a connector says about itself. Lives in connectors/{slug}/src/listing.ts. */
+export type Listing = {
   oneLiner: string;
-  status: ConnectorStatus;
   category: ConnectorCategory;
   pricingBlurb: string;
   repoUrl?: string;
+  howMuseUsesIt: string;
+  examplePrompts: string[];
+  productNotes?: string;
+  docs: ConnectorDocsNotes;
+  legal: ConnectorLegal;
+};
+
+/** Catalog card. Built from a connector module; paths are derived from the slug. */
+export type Connector = Omit<Listing, "docs" | "legal"> & {
+  slug: string;
+  name: string;
+  status: ConnectorStatus;
   docsPath: string;
   apiBasePath: string;
   mcpPath: string;
   privacyPath: string;
   termsPath: string;
-  howMuseUsesIt: string;
-  examplePrompts: string[];
-  productNotes?: string;
-  gatewayImplemented: boolean;
 };
 
 export const STATUS_LABELS: Record<ConnectorStatus, string> = {

@@ -10,17 +10,15 @@ Telep IO builds **independent** connectors that work with [Muse](https://muse.ai
 
 ## Architecture
 
-One Next.js App Router app, with connector modules kept separate so the path to ~100 connectors stays obvious:
+One Next.js App Router app, with one folder per connector. Adding one is its folder plus one line in `connectors/index.ts` ([skill](.claude/skills/add-muse-connector/SKILL.md)):
 
 ```
 app/                    Catalog pages + gateway route handlers (Vercel)
-packages/registry/      Typed connector catalog (source of truth)
-packages/platform/      Auth, CORS, errors, rate-limit stub, OpenAPI merge, Stripe helpers, MCP HTTP
-connectors/paper-send/  Callable MCP + REST stub (Express app is services/paper-send)
-connectors/sumvid/      YouTube summarize stub (REST + MCP + OpenAPI)
-connectors/shipsignal/  Package tracking stub (REST + MCP + OpenAPI)
-connectors/*-send/      Sign/fax/call/ink/domain MCP + REST stubs
-services/*-send/        Express fulfillment apps (not workspaces; not in the Vercel build)
+connectors/index.ts     The list of connector modules. Everything else derives from it.
+connectors/{slug}/      One folder per connector: connector.ts (REST + MCP + OpenAPI), listing.ts (card + legal)
+packages/registry/      Catalog types + cards derived from connectors/index.ts
+packages/platform/      defineConnector, auth, CORS, errors, rate-limit, OpenAPI, Stripe, MCP, SQLite, legal builder
+services/{slug}/        Express fulfillment apps (not workspaces; not in the Vercel build)
 lib/gateway.ts          Dispatch: slug → connector module
 middleware.ts           api.* host rewrites `/` → `/v1`
 ```

@@ -1,17 +1,16 @@
 # connectors/
 
-Each Telep Muse connector gets a directory here.
+One folder per Telep Muse connector. Adding one = its folder + one line in [`index.ts`](index.ts). See [`.claude/skills/add-muse-connector/SKILL.md`](../.claude/skills/add-muse-connector/SKILL.md).
 
 ```
-connectors/{slug}/
-  package.json          # @telep/{slug}
-  src/index.ts          # REST handler + MCP handler + OpenAPI
+connectors/{slug}/src/
+  index.ts       export { default } from "./connector"
+  connector.ts   defineConnector({...}) → REST + MCP + OpenAPI (+ optional Stripe fulfill)
+  listing.ts     catalog card, docs notes, privacy/terms
 ```
 
-Register metadata in `packages/registry` (catalog + routing). Wire the module in `lib/gateway.ts` (REST + MCP dispatch).
+These are not npm packages. The tsconfig alias `@telep/{slug}` resolves to `connectors/{slug}/src/index.ts`. The registry, gateway dispatch, docs, legal pages, and billing webhook all read [`connectorModules`](index.ts). `tests/connectors.test.ts` checks every module here.
 
-v0 implements **paper-send**, **ship-label**, **gift-send**, **sumvid**, **shipsignal**, **sign-send**, **fax-send**, **call-send**, **ink-send**, **domain-send**, and **print-merch** as callable gateway modules. ShipLabel, GiftSend, and PrintMerch demo drafts are stored in SQLite. The other modules are in-memory stubs.
-
-These directories are the agent-facing gateway modules only (REST + MCP + OpenAPI). Express fulfillment for call-send, domain-send, fax-send, ink-send, paper-send, print-merch, ship-label, gift-send, and sign-send lives in [`services/`](../services/README.md). Those apps deploy separately, are not npm workspaces, and are not imported here. PaperSend's Express app is `services/paper-send`. ShipLabel's Express app is `services/ship-label`. GiftSend's Express app is `services/gift-send`. PrintMerch's Express app is `services/print-merch`. The gateway calls ShipLabel over `SHIP_LABEL_SERVICE_URL` GiftSend over `GIFT_SEND_SERVICE_URL`, and PrintMerch over `PRINT_MERCH_SERVICE_URL` in test and live.
+These directories are the agent-facing gateway modules only. Paid connectors hand off to Express fulfillment apps in [`services/`](../services/README.md) over `{PREFIX}_SERVICE_URL`. Those apps deploy separately and are never imported here.
 
 See [FOUNDATION.md](../FOUNDATION.md) and [SUBMISSION.md](../SUBMISSION.md).

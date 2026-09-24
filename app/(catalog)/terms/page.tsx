@@ -33,8 +33,9 @@ export default function TermsPage() {
       <h2>The service</h2>
       <p>
         The catalog describes Telep connectors. The gateway exposes HTTP and MCP endpoints for every
-        connector with <code>gatewayImplemented: true</code> (all eight today). Every current
-        gateway module is a stub: creating a job does not fulfill, charge, or bind a provider.
+        listed connector. In demo mode every gateway module is a stub: creating a job does not
+        fulfill, charge, or bind a provider. See each connector&apos;s own terms for test and live
+        behavior.
       </p>
       <h2>Acceptable use</h2>
       <ul>

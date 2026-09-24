@@ -1,9 +1,8 @@
 # services/
 
-Separately deployed Express fulfillment backends for CallSend, DomainSend, FaxSend, InkSend, PaperSend, PrintMerch, ShipLabel, and SignSend.
-Separately deployed Express fulfillment backends for CallSend, DomainSend, FaxSend, GiftSend, InkSend, PaperSend, ShipLabel, and SignSend.
+Separately deployed Express fulfillment backends for CallSend, DomainSend, FaxSend, GiftSend, InkSend, PaperSend, PrintMerch, ShipLabel, and SignSend.
 
-They are **not** part of the Vercel Next.js build and they are **not** npm workspaces. Root `package.json` keeps `workspaces` at `packages/*` and `connectors/*` only, so `express`, `pg`, and these apps' Stripe clients stay out of the Vercel install. Do not import this tree from `app/`, `connectors/`, or `packages/`.
+They are **not** part of the Vercel Next.js build and they are **not** npm workspaces. Root `package.json` keeps `workspaces` at `packages/*` only, so `express`, `pg`, and these apps' Stripe clients stay out of the Vercel install. Do not import this tree from `app/`, `connectors/`, or `packages/`.
 
 Each directory was added with `git subtree add` from its standalone [Telep-IO](https://github.com/Telep-IO) repository. The original scaffold commit is a parent of that merge, and the service source was not rewritten. The standalone repositories stay up until Jon archives them after this change is merged and health-checked.
 

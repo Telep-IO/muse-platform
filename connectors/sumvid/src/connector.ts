@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector } from "@telep/platform";
 import { checkSumvid, summarize, sumvidAccount, sumvidDescriptor } from "./provider";
 import { getSummary, listSummaries, publicSummary } from "./summaries";
@@ -6,6 +7,7 @@ const sumvid = defineConnector({
   slug: "sumvid",
   name: "Sumvid",
   status: "ready",
+  listing,
   descriptor: sumvidDescriptor,
   check: {
     description:
@@ -49,3 +51,5 @@ export const handleSumvidRest = sumvid.rest;
 export const handleSumvidMcp = sumvid.mcp;
 export const sumvidOpenApi = sumvid.openapi;
 export const sumvidTools = sumvid.tools;
+
+export default sumvid;

@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector, errorResponse, mcpAuth, readJson, unauthorized, withCors, type McpTool } from "@telep/platform";
 import { createDomain, demoEvent, getDomain, listDomains, publicDomain } from "./domains";
 import { assertDomainReady, checkDomainCredentials, domainDescriptor, domainRuntime, resolveAvailability } from "./provider";
@@ -35,6 +36,7 @@ const domain = defineConnector({
   slug: "domain-send",
   name: "DomainSend",
   status: "planned",
+  listing,
   price: "from $13.99/yr (.org)",
   limits: "registration only in v1, no renewals; TLDs: com, net, org, io, dev, app, tools; 1-2 year terms",
   descriptor: domainDescriptor,
@@ -105,3 +107,5 @@ export const handleDomainSendRest = domain.rest;
 export const handleDomainSendMcp = domain.mcp;
 export const domainSendOpenApi = domain.openapi;
 export const domainSendTools = domain.tools;
+
+export default domain;

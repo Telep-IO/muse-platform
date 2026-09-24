@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, before, test } from "node:test";
 import { HttpError, lookupKey } from "@telep/platform";
 import { dispatchMcp, dispatchRest } from "../lib/gateway";
-import { printMerchFulfillmentPlan } from "../lib/billing-forward";
+import { printMerchFulfillmentPlan } from "../connectors/print-merch/src/fulfill";
 import {
   ARTWORK_ATTESTATION,
   checkPrintMerch,

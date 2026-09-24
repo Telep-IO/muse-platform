@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import {
   defineConnector,
   errorResponse,
@@ -102,6 +103,8 @@ const shipLabel = defineConnector({
   slug: "ship-label",
   name: "ShipLabel",
   status: "submitted",
+  listing,
+  fulfill: (session) => fulfillShipLabelPayment(session),
   descriptor: shipLabelDescriptor,
   gate: () => ({ mode: shipLabelRuntime().mode, ready: () => assertShipLabelReady() }),
   check: {
@@ -201,3 +204,5 @@ export const handleShipLabelMcp = shipLabel.mcp;
 export const shipLabelOpenApi = shipLabel.openapi;
 export const shipLabelTools = shipLabel.tools;
 export { fulfillShipLabelPayment };
+
+export default shipLabel;

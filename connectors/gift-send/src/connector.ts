@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector, errorResponse, HttpError, mcpAuth, readJson, unauthorized, withCors, type McpTool } from "@telep/platform";
 import { fulfillGiftSendPayment } from "./fulfill";
 import { cancelGift, createGiftDraft, getGift, listGifts, listRewardProducts, sendGift } from "./jobs";
@@ -85,6 +86,8 @@ const giftSend = defineConnector({
   slug: "gift-send",
   name: "GiftSend",
   status: "submitted",
+  listing,
+  fulfill: (session) => fulfillGiftSendPayment(session),
   descriptor: giftSendDescriptor,
   gate: () => ({ mode: giftSendRuntime().mode, ready: () => assertGiftSendReady() }),
   check: {
@@ -195,3 +198,5 @@ export const handleGiftSendMcp = giftSend.mcp;
 export const giftSendOpenApi = giftSend.openapi;
 export const giftSendTools = giftSend.tools;
 export { fulfillGiftSendPayment };
+
+export default giftSend;
