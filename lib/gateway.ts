@@ -1,33 +1,6 @@
-import { authenticate, emptySpec, isWriteMethod, jsonError, mergeOpenApi, publicApiUrl, rateLimit, rateLimitHeaders, withCors, type AuthResult, type OpenApiDocument } from "@telep/platform";
-import { connectorCount, getConnector, listConnectors } from "@telep/registry";
-import { handlePaperSendMcp, handlePaperSendRest, paperSendOpenApi } from "@telep/paper-send";
-import { handleGiftSendMcp, handleGiftSendRest, giftSendOpenApi } from "@telep/gift-send";
-import { handleShipLabelMcp, handleShipLabelRest, shipLabelOpenApi } from "@telep/ship-label";
-import { handleSignSendMcp, handleSignSendRest, signSendOpenApi } from "@telep/sign-send";
-import { handleFaxSendMcp, handleFaxSendRest, faxSendOpenApi } from "@telep/fax-send";
-import { handleCallSendMcp, handleCallSendRest, callSendOpenApi } from "@telep/call-send";
-import { handleInkSendMcp, handleInkSendRest, inkSendOpenApi } from "@telep/ink-send";
-import { handleDomainSendMcp, handleDomainSendRest, domainSendOpenApi } from "@telep/domain-send";
-import { handleSumvidMcp, handleSumvidRest, sumvidOpenApi } from "@telep/sumvid";
-import { handleShipSignalMcp, handleShipSignalRest, shipSignalOpenApi } from "@telep/shipsignal";
-import { handlePrintMerchMcp, handlePrintMerchRest, printMerchOpenApi } from "@telep/print-merch";
-
-type RestHandler = (request: Request, path: string[], auth: AuthResult | null) => Promise<Response>;
-type McpHandler = (request: Request) => Promise<Response>;
-
-const modules: Record<string, { rest: RestHandler; mcp: McpHandler; openapi: () => OpenApiDocument }> = {
-  "paper-send": { rest: handlePaperSendRest, mcp: handlePaperSendMcp, openapi: paperSendOpenApi },
-  "ship-label": { rest: handleShipLabelRest, mcp: handleShipLabelMcp, openapi: shipLabelOpenApi },
-  "gift-send": { rest: handleGiftSendRest, mcp: handleGiftSendMcp, openapi: giftSendOpenApi },
-  "sign-send": { rest: handleSignSendRest, mcp: handleSignSendMcp, openapi: signSendOpenApi },
-  "fax-send": { rest: handleFaxSendRest, mcp: handleFaxSendMcp, openapi: faxSendOpenApi },
-  "call-send": { rest: handleCallSendRest, mcp: handleCallSendMcp, openapi: callSendOpenApi },
-  "ink-send": { rest: handleInkSendRest, mcp: handleInkSendMcp, openapi: inkSendOpenApi },
-  "domain-send": { rest: handleDomainSendRest, mcp: handleDomainSendMcp, openapi: domainSendOpenApi },
-  sumvid: { rest: handleSumvidRest, mcp: handleSumvidMcp, openapi: sumvidOpenApi },
-  shipsignal: { rest: handleShipSignalRest, mcp: handleShipSignalMcp, openapi: shipSignalOpenApi },
-  "print-merch": { rest: handlePrintMerchRest, mcp: handlePrintMerchMcp, openapi: printMerchOpenApi },
-};
+import { authenticate, emptySpec, isWriteMethod, jsonError, mergeOpenApi, publicApiUrl, rateLimit, rateLimitHeaders, withCors } from "@telep/platform";
+import { connectorCount, listConnectors } from "@telep/registry";
+import { connectorModules, getModule } from "@/connectors";
 
 function restAuthRequired(method: string, path: string[]): boolean {
   if (isWriteMethod(method)) return true;
@@ -63,7 +36,7 @@ export function platformOpenApi() {
     },
   };
   spec.tags = [{ name: "platform", description: "Gateway" }];
-  return mergeOpenApi(spec, Object.values(modules).map((mod) => mod.openapi()));
+  return mergeOpenApi(spec, connectorModules.map((mod) => mod.openapi()));
 }
 
 export function healthPayload() {
@@ -83,14 +56,13 @@ export function v1Index() {
       apiBasePath: connector.apiBasePath,
       mcpPath: connector.mcpPath,
       openapi: `${connector.apiBasePath}/openapi.json`,
-      gatewayImplemented: connector.gatewayImplemented,
     })),
   };
 }
 
 export async function dispatchRest(request: Request, slug: string, path: string[]): Promise<Response> {
-  const connector = getConnector(slug);
-  if (!connector) return withCors(request, jsonError(404, "not_found", `Unknown connector: ${slug}`));
+  const mod = getModule(slug);
+  if (!mod) return withCors(request, jsonError(404, "not_found", `Unknown connector: ${slug}`));
 
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
   const limited = rateLimit(`rest:${ip}:${slug}`);
@@ -102,27 +74,11 @@ export async function dispatchRest(request: Request, slug: string, path: string[
   } catch (error) {
     if (error instanceof Error) return withCors(request, jsonError(401, "unauthorized", error.message));
   }
-
-  const mod = modules[slug];
-  if (mod) return mod.rest(request, path, auth);
-
-  if (path[0] === "openapi.json") {
-    return withCors(
-      request,
-      Response.json(emptySpec({ title: connector.name, version: "0.0.0", description: `${connector.oneLiner} Not yet implemented on this gateway.` })),
-    );
-  }
-
-  return withCors(
-    request,
-    jsonError(501, "not_implemented", `${connector.name} is listed in the catalog but is not served on this gateway yet.${connector.repoUrl ? ` See ${connector.repoUrl}` : ""}`),
-  );
+  return mod.rest(request, path, auth);
 }
 
 export async function dispatchMcp(request: Request, slug: string): Promise<Response> {
-  const connector = getConnector(slug);
-  if (!connector) return withCors(request, jsonError(404, "not_found", `Unknown connector: ${slug}`));
-  const mod = modules[slug];
-  if (mod) return mod.mcp(request);
-  return withCors(request, jsonError(501, "not_implemented", `${connector.name} MCP is not on this gateway yet.`));
+  const mod = getModule(slug);
+  if (!mod) return withCors(request, jsonError(404, "not_found", `Unknown connector: ${slug}`));
+  return mod.mcp(request);
 }

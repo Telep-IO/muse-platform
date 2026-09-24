@@ -2,11 +2,10 @@
   "name": "muse-platform",
   "version": "0.1.0",
   "private": true,
-  "description": "Telep IO Muse platform — connector catalog (muse.telep.io) + API gateway (api.muse.telep.io)",
+  "description": "Telep IO Muse platform \u2014 connector catalog (muse.telep.io) + API gateway (api.muse.telep.io)",
   "license": "UNLICENSED",
   "workspaces": [
-    "packages/*",
-    "connectors/*"
+    "packages/*"
   ],
   "scripts": {
     "dev": "next dev",
@@ -19,19 +18,8 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@telep/paper-send": "*",
-    "@telep/print-merch": "*",
-    "@telep/gift-send": "*",
-    "@telep/ship-label": "*",
-    "@telep/sign-send": "*",
-    "@telep/fax-send": "*",
-    "@telep/call-send": "*",
-    "@telep/ink-send": "*",
-    "@telep/domain-send": "*",
     "@telep/platform": "*",
     "@telep/registry": "*",
-    "@telep/shipsignal": "*",
-    "@telep/sumvid": "*",
     "@vercel/analytics": "^2.0.1",
     "next": "^15.5.4",
     "react": "^19.1.1",

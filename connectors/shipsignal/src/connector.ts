@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector } from "@telep/platform";
 import { getParcel, listParcels, publicParcel, setWatching } from "./parcels";
 import { checkShip, refreshParcelResolved, shipAccount, shipDescriptor, trackParcel } from "./provider";
@@ -12,6 +13,7 @@ const ship = defineConnector({
   slug: "shipsignal",
   name: "ShipSignal",
   status: "ready",
+  listing,
   descriptor: shipDescriptor,
   check: {
     description: "Validate the ShipSignal aggregator key. Does not register a tracking number. Demo mode skips the provider.",
@@ -75,3 +77,5 @@ export const handleShipSignalRest = ship.rest;
 export const handleShipSignalMcp = ship.mcp;
 export const shipSignalOpenApi = ship.openapi;
 export const shipSignalTools = ship.tools;
+
+export default ship;

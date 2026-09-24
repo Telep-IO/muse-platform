@@ -62,23 +62,9 @@ test("health payload", () => {
 
 test("v1 index lists implemented gateway modules", () => {
   const index = v1Index();
-  const implemented = [
-    "paper-send",
-    "sumvid",
-    "shipsignal",
-    "sign-send",
-    "fax-send",
-    "call-send",
-    "ink-send",
-    "domain-send",
-    "ship-label",
-    "print-merch",
-    "gift-send",
-  ];
-  for (const slug of implemented) {
+  for (const { slug } of listConnectors()) {
     const connector = index.connectors.find((c) => c.slug === slug);
     assert.ok(connector, slug);
-    assert.equal(connector?.gatewayImplemented, true, slug);
   }
   const sumvid = index.connectors.find((c) => c.slug === "sumvid");
   assert.equal(sumvid?.status, "ready");
@@ -235,7 +221,6 @@ test("sign-send descriptor, registry, and OpenAPI wiring", async () => {
   const conn = getConnector("sign-send");
   assert.equal(conn?.apiBasePath, "/v1/sign-send");
   assert.equal(conn?.mcpPath, "/mcp/sign-send");
-  assert.equal(conn?.gatewayImplemented, true);
 
   const desc = await handleSignSendRest(
     new Request("http://localhost/v1/sign-send"),

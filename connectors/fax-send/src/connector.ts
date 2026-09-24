@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector, documentPages } from "@telep/platform";
 import { createFax, demoEvent, getFax, listFaxes, publicFax } from "./faxes";
 import { assertFaxReady, checkFax, faxDescriptor, faxRuntime, quoteFax } from "./provider";
@@ -16,6 +17,7 @@ const fax = defineConnector({
   slug: "fax-send",
   name: "FaxSend",
   status: "building",
+  listing,
   price: "$0.99 per transmitted page",
   limits: "PDF up to 10 pages, optional cover page (billable)",
   descriptor: faxDescriptor,
@@ -67,3 +69,5 @@ export const handleFaxSendRest = fax.rest;
 export const handleFaxSendMcp = fax.mcp;
 export const faxSendOpenApi = fax.openapi;
 export const faxSendTools = fax.tools;
+
+export default fax;

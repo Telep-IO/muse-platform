@@ -1,3 +1,4 @@
+import type { ConnectorStatus, Listing } from "@telep/registry";
 import type { AuthResult } from "./auth";
 import { catalogOrigin } from "./hosts";
 import { draftRest } from "./draft";
@@ -14,6 +15,7 @@ import {
   openApiSelfPath,
   type OpenApiDocument,
 } from "./openapi";
+import type { FulfillResult, PaidSession, StripeWebhook } from "./stripe";
 
 export type CreateCtx = { keyId: string; catalogOrigin: string; live: boolean };
 
@@ -48,7 +50,14 @@ type Resource<T> = {
 export type ConnectorDef<T> = {
   slug: string;
   name: string;
-  status: string;
+  status: ConnectorStatus;
+  /** Catalog card, docs copy, and legal pages. Keep it in src/listing.ts. */
+  listing: Listing;
+  /**
+   * Called by /v1/billing/webhook for Stripe sessions whose metadata.connector is this slug.
+   * Only paid connectors need it. Return undefined to acknowledge without fulfilling.
+   */
+  fulfill?: (session: PaidSession, webhook: StripeWebhook) => Promise<FulfillResult | undefined>;
   price?: string;
   limits?: string;
   descriptor: () => Record<string, unknown>;
@@ -191,9 +200,16 @@ export function defineConnector<T>(def: ConnectorDef<T>) {
   });
 
   return {
+    slug: def.slug,
+    name: def.name,
+    status: def.status,
+    listing: def.listing,
+    fulfill: def.fulfill,
     rest,
     mcp: createMcpHandler({ name: def.slug, version: "0.1.0", tools }),
     openapi,
     tools,
   };
 }
+
+export type ConnectorModule = ReturnType<typeof defineConnector>;

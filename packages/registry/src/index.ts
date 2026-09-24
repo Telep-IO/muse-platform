@@ -1,5 +1,10 @@
 export type {
   Connector,
+  ConnectorDocsNotes,
+  ConnectorDocsSection,
+  ConnectorLegal,
+  LegalSection,
+  Listing,
   ConnectorCategory,
   ConnectorStatus,
 } from "./types";

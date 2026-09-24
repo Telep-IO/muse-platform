@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector, documentPages } from "@telep/platform";
 import { createEnvelope, demoEvent, getEnvelope, listEnvelopes, publicEnvelope } from "./envelopes";
 import { assertSignReady, checkSign, quoteSign, signDescriptor, signRuntime } from "./provider";
@@ -21,6 +22,7 @@ const sign = defineConnector({
   slug: "sign-send",
   name: "SignSend",
   status: "building",
+  listing,
   price: "$2.99 per envelope",
   limits: "PDF up to 5 pages, 1-5 sequential signers",
   descriptor: signDescriptor,
@@ -72,3 +74,5 @@ export const handleSignSendRest = sign.rest;
 export const handleSignSendMcp = sign.mcp;
 export const signSendOpenApi = sign.openapi;
 export const signSendTools = sign.tools;
+
+export default sign;

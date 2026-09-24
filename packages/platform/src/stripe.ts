@@ -84,20 +84,15 @@ export type PaidSession = {
   eventType: string;
   paymentStatus: string | null;
   livemode: boolean;
-  metadata: {
-    connector?: string;
-    jobId?: string;
-    draft_id?: string;
-    rate_id?: string;
-    postage_cents?: string;
-    fee_cents?: string;
-    face_cents?: string;
-    reward_id?: string;
-  };
+  /** Every string key from the Checkout session metadata. */
+  metadata: { connector?: string; jobId?: string; [key: string]: string | undefined };
   amountSubtotal: number | null;
   amountTotal: number | null;
   currency: string | null;
 };
+
+/** The raw Stripe request, for connectors whose service re-verifies the signature itself. */
+export type StripeWebhook = { raw: string; signature: string | null };
 
 export type FulfillResult = {
   fulfilled: boolean;
@@ -125,16 +120,7 @@ export function paidSessionFromEvent(event: {
     eventType: event.type,
     paymentStatus: paymentStatus ?? (event.type === "checkout.session.async_payment_succeeded" ? "paid" : null),
     livemode: object.livemode === true,
-    metadata: {
-      connector: text("connector"),
-      jobId: text("jobId"),
-      draft_id: text("draft_id"),
-      rate_id: text("rate_id"),
-      postage_cents: text("postage_cents"),
-      fee_cents: text("fee_cents"),
-      face_cents: text("face_cents"),
-      reward_id: text("reward_id"),
-    },
+    metadata: Object.fromEntries(Object.keys(metadata).map((key) => [key, text(key)])),
     amountSubtotal: typeof object.amount_subtotal === "number" ? object.amount_subtotal : null,
     amountTotal: typeof object.amount_total === "number" ? object.amount_total : null,
     currency: object.currency ? String(object.currency) : null,

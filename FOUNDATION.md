@@ -20,7 +20,7 @@ Cloudflare: both `muse.telep.io` and `api.muse.telep.io` CNAME to this Vercel pr
 | Path | Role |
 | --- | --- |
 | `app/` | Next.js catalog and gateway handlers. This is what Vercel builds. |
-| `connectors/` | Workspace packages `@telep/*`. Agent-facing MCP + REST stubs. |
+| `connectors/` | One folder per connector (`@telep/{slug}` via tsconfig alias). Agent-facing MCP + REST + catalog listing. |
 | `packages/` | Workspace packages `@telep/registry` and `@telep/platform`. |
 | `services/` | Express fulfillment backends, including PaperSend. Own lockfiles. Not workspaces. Not imported by `app/`, `connectors/`, or `packages/`. |
 
@@ -62,21 +62,15 @@ Do not commit live keys. Rotate by replacing the env var.
 
 ## Registry
 
-`packages/registry` is the source of truth for catalog cards **and** gateway routing.
-
-Required fields: `slug`, `name`, `oneLiner`, `status` (`submitted` | `building` | `ready` | `planned`), `category`, `pricingBlurb`, `repoUrl?`, `docsPath`, `apiBasePath` (`/v1/{slug}`), `mcpPath` (`/mcp/{slug}`), `privacyPath`, `termsPath`, plus `howMuseUsesIt`, `examplePrompts`, `gatewayImplemented`.
+`packages/registry` derives catalog cards from `connectors/index.ts`. Each connector's `listing.ts` holds `oneLiner`, `category`, `pricingBlurb`, `repoUrl?`, `howMuseUsesIt`, `examplePrompts`, `docs`, and `legal`. `slug`, `name`, and `status` (`submitted` | `building` | `ready` | `planned`) come from `defineConnector`, and paths are derived from the slug.
 
 Do not list BarkMarks or CallCatch as catalog heroes.
 
 ## How to add a connector
 
-1. Add a registry entry in `packages/registry/src/connectors.ts`.
-2. Create `connectors/{slug}` exporting REST + MCP + OpenAPI. Copy `connectors/paper-send` as the shape.
-3. Wire `slug` in `lib/gateway.ts` (`dispatchRest` / `dispatchMcp`).
-4. Catalog pages pick it up automatically.
-5. Until the module exists, the gateway returns `501` with a repo link — that is expected.
-6. Fill [SUBMISSION.md](SUBMISSION.md) before sending Meta a listing. Use gateway URLs, not localhost.
-7. Never claim Meta partnership, endorsement, or directory placement unless Meta has actually listed the connector.
+Follow [`.claude/skills/add-muse-connector/SKILL.md`](.claude/skills/add-muse-connector/SKILL.md). In short: copy `connectors/fax-send` to `connectors/{slug}`, rename, add one line to `connectors/index.ts`, add the icon and `{PREFIX}_APP_MODE` env, then run `npm test`. `tests/connectors.test.ts` enforces the contract.
+
+Fill [SUBMISSION.md](SUBMISSION.md) before sending Meta a listing. Use gateway URLs, not localhost. Never claim Meta partnership, endorsement, or directory placement unless Meta has actually listed the connector.
 
 ## Stripe
 

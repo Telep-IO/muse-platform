@@ -1,8 +1,5 @@
-import { mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
-import { createCheckoutSession, envValue, HttpError, providerRequest, readAppMode, type Env } from "@telep/platform";
+import type { DatabaseSync } from "node:sqlite";
+import { withSqlite, createCheckoutSession, envValue, HttpError, providerRequest, readAppMode, type Env } from "@telep/platform";
 import { assertShipLabelReady } from "./provider";
 
 /** USPS only until a later phase explicitly expands scope. */
@@ -202,14 +199,7 @@ function safeId(id: string): string {
   return id;
 }
 
-function openDb(env: Env): DatabaseSync {
-  const mode = readAppMode("SHIP_LABEL_APP_MODE", env);
-  const root = envValue("SHIP_LABEL_DATA_DIR", env) || join(tmpdir(), "muse-ship-label");
-  const file = join(root, mode, "shiplabel.sqlite");
-  mkdirSync(dirname(file), { recursive: true });
-  const db = new DatabaseSync(file);
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+const SCHEMA = `
     CREATE TABLE IF NOT EXISTS drafts (
       id TEXT PRIMARY KEY,
       owner_key TEXT NOT NULL,
@@ -223,23 +213,10 @@ function openDb(env: Env): DatabaseSync {
       label_status TEXT,
       purchased INTEGER NOT NULL DEFAULT 0
     );
-  `);
-  const stored = db.prepare("SELECT value FROM settings WHERE key='mode'").get() as { value: string } | undefined;
-  if (stored && stored.value !== mode) {
-    db.close();
-    throw new HttpError(500, "mode_mismatch", "Use a separate DATA_DIR for each SHIP_LABEL_APP_MODE.");
-  }
-  db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('mode', ?)").run(mode);
-  return db;
-}
+`;
 
 function withDb<T>(env: Env, fn: (db: DatabaseSync) => T): T {
-  const db = openDb(env);
-  try {
-    return fn(db);
-  } finally {
-    db.close();
-  }
+  return withSqlite("ship-label", SCHEMA, env, fn);
 }
 
 function rowDraft(row: DraftRow, env: Env): ShipmentDraft {

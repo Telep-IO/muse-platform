@@ -1,3 +1,4 @@
+import { listing } from "./listing";
 import { defineConnector } from "@telep/platform";
 import { MAX_SCRIPT_CHARS, createCall, demoEvent, getCall, listCalls, publicCall } from "./calls";
 import { assertCallReady, callDescriptor, callRuntime, checkCall, quoteCall } from "./provider";
@@ -21,6 +22,7 @@ const call = defineConnector({
   slug: "call-send",
   name: "CallSend",
   status: "planned",
+  listing,
   price: "$0.99 per call",
   limits: "verbatim TTS script, up to ~5 minutes",
   descriptor: callDescriptor,
@@ -73,3 +75,5 @@ export const handleCallSendRest = call.rest;
 export const handleCallSendMcp = call.mcp;
 export const callSendOpenApi = call.openapi;
 export const callSendTools = call.tools;
+
+export default call;
