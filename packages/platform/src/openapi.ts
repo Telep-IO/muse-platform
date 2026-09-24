@@ -1,5 +1,3 @@
-export type JsonSchema = Record<string, unknown>;
-
 export type OpenApiDocument = {
   openapi: string;
   info: {
@@ -68,5 +66,193 @@ export function mergeOpenApi(base: OpenApiDocument, parts: OpenApiDocument[]): O
     paths,
     components,
     tags: uniqueTags,
+  };
+}
+
+const ok = { "200": { description: "OK" } };
+
+function bearer() {
+  return [{ bearerAuth: [] }];
+}
+
+function idParams() {
+  return [{ name: "id", in: "path" as const, required: true, schema: { type: "string" } }];
+}
+
+export function connectorSpec(info: { title: string; description: string; tag: string; tagDescription: string }, paths: OpenApiDocument["paths"]): OpenApiDocument {
+  const spec = emptySpec({
+    title: info.title,
+    version: "0.1.0",
+    description: info.description,
+    contact: { name: "Telep IO", email: "jon@telep.io", url: "https://telep.io" },
+  });
+  spec.tags = [{ name: info.tag, description: info.tagDescription }];
+  spec.paths = paths;
+  return spec;
+}
+
+export function descriptorPath(tag: string) {
+  return { get: { tags: [tag], summary: "Connector descriptor", responses: ok } };
+}
+
+export function openApiSelfPath(tag: string) {
+  return { get: { tags: [tag], summary: "This OpenAPI document", responses: ok } };
+}
+
+export function postalAddress(opts?: { line2?: boolean; country?: boolean }) {
+  return {
+    type: "object" as const,
+    required: ["name", "address_line1", "address_city", "address_state", "address_zip"],
+    properties: {
+      name: { type: "string" },
+      address_line1: { type: "string" },
+      ...(opts?.line2 ? { address_line2: { type: "string" } } : {}),
+      address_city: { type: "string" },
+      address_state: { type: "string" },
+      address_zip: { type: "string" },
+      ...(opts?.country ? { address_country: { type: "string", default: "US" } } : {}),
+    },
+  };
+}
+
+export function documentPages(max: number) {
+  return { type: "object" as const, properties: { filename: { type: "string" }, pages: { type: "integer", minimum: 1, maximum: max } } };
+}
+
+export function parsePostalAddress(value: unknown, label: string, opts?: { line2?: boolean; country?: boolean; each?: boolean }) {
+  if (!value || typeof value !== "object") {
+    throw new Error(
+      opts?.each
+        ? `${label} must be an object with name, address_line1, address_city, address_state, address_zip`
+        : `${label} is required`,
+    );
+  }
+  const a = value as Record<string, unknown>;
+  const take = (key: string) => {
+    const text = String(a[key] ?? "").trim();
+    if (opts?.each && !text) throw new Error(`${label}.${key} is required`);
+    return text;
+  };
+  const name = take("name");
+  const address_line1 = take("address_line1");
+  const address_city = take("address_city");
+  const address_state = take("address_state");
+  const address_zip = take("address_zip");
+  if (!opts?.each && (!name || !address_line1 || !address_city || !address_state || !address_zip)) {
+    throw new Error(`${label} needs name, address_line1, address_city, address_state, address_zip`);
+  }
+  return {
+    name,
+    address_line1,
+    ...(opts?.line2 ? { address_line2: a.address_line2 ? String(a.address_line2) : "" } : {}),
+    address_city,
+    address_state,
+    address_zip,
+    ...(opts?.country ? { address_country: String(a.address_country ?? "US") } : {}),
+  };
+}
+
+export function authedGet(tag: string, summary: string, byId = false) {
+  return {
+    get: {
+      tags: [tag],
+      summary,
+      security: bearer(),
+      ...(byId ? { parameters: idParams() } : {}),
+      responses: byId
+        ? { "200": { description: "OK" }, "404": { description: "Not found" } }
+        : { "200": { description: "OK" }, "401": { description: "Missing key" } },
+    },
+  };
+}
+
+export function listAndCreate(
+  tag: string,
+  listSummary: string,
+  createSummary: string,
+  schema: Record<string, unknown>,
+  withInvalid = false,
+) {
+  const responses: Record<string, { description: string }> = { "201": { description: "Created" } };
+  if (withInvalid) responses["400"] = { description: "Invalid request" };
+  responses["401"] = { description: "Missing key" };
+  return {
+    get: {
+      tags: [tag],
+      summary: listSummary,
+      security: bearer(),
+      responses: { "200": { description: "OK" }, "401": { description: "Missing key" } },
+    },
+    post: {
+      tags: [tag],
+      summary: createSummary,
+      security: bearer(),
+      requestBody: { required: true, content: { "application/json": { schema } } },
+      responses,
+    },
+  };
+}
+
+export function checkoutPath(tag: string) {
+  return {
+    post: {
+      tags: [tag],
+      summary: "Create a checkout session (stub)",
+      security: bearer(),
+      parameters: idParams(),
+      responses: {
+        "200": { description: "OK" },
+        "404": { description: "Not found" },
+        "409": { description: "Not a draft" },
+      },
+    },
+  };
+}
+
+export function demoEventPath(tag: string, summary: string, events: string[], extra?: Record<string, unknown>) {
+  return {
+    post: {
+      tags: [tag],
+      summary,
+      security: bearer(),
+      parameters: idParams(),
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["event"],
+              properties: { event: { type: "string", enum: events }, ...extra },
+            },
+          },
+        },
+      },
+      responses: { "200": { description: "OK" }, "400": { description: "Invalid transition" } },
+    },
+  };
+}
+
+export function actionPost(tag: string, summary: string) {
+  return {
+    post: {
+      tags: [tag],
+      summary,
+      security: bearer(),
+      parameters: idParams(),
+      responses: { "200": { description: "OK" }, "404": { description: "Not found" } },
+    },
+  };
+}
+
+export function authedPost(tag: string, summary: string, schema: Record<string, unknown>, responses: Record<string, { description: string }>) {
+  return {
+    post: {
+      tags: [tag],
+      summary,
+      security: bearer(),
+      requestBody: { required: true, content: { "application/json": { schema } } },
+      responses,
+    },
   };
 }

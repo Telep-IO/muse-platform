@@ -103,11 +103,6 @@ function buildLegal(input: LegalInput): ConnectorLegal {
   };
 }
 
-/**
- * Per-connector privacy policies and terms of service.
- * Rendered at /connectors/{slug}/privacy and /connectors/{slug}/terms.
- * Shared boilerplate lives in helpers above; only product diffs belong in the specs.
- */
 export const connectorLegal: Record<string, ConnectorLegal> = {
   "paper-send": buildLegal({
     name: "PaperSend",

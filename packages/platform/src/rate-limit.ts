@@ -1,7 +1,4 @@
-/**
- * In-memory rate-limit stub. Replace with Redis/Upstash before production load.
- * TODO: durable limiter keyed by API key + IP.
- */
+// In-memory only. Swap for a durable limiter before this gateway takes real traffic.
 
 type Bucket = { count: number; resetAt: number };
 

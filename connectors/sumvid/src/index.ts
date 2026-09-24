@@ -1,15 +1,3 @@
 export { checkSumvid, summarize } from "./provider";
-export { handleSumvidRest } from "./rest";
-export { handleSumvidMcp } from "./mcp";
-export { sumvidOpenApi } from "./openapi";
-export {
-  createSummary,
-  getAccount,
-  getSummary,
-  listSummaries,
-  parseYoutubeInput,
-  publicSummary,
-  resetSummaries,
-  STUB_NOTE,
-} from "./summaries";
-export type { Summary } from "./summaries";
+export { handleSumvidRest, handleSumvidMcp, sumvidTools, sumvidOpenApi } from "./connector";
+export { resetSummaries, STUB_NOTE } from "./summaries";

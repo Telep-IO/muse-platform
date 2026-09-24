@@ -1,2 +1,2 @@
-export { allowedOrigins, corsHeaders, isAllowedOrigin, preflight, withCors } from "./cors";
-export { apiOrigin, catalogOrigin, isApiHost, publicApiUrl, publicCatalogUrl } from "./hosts";
+export { corsHeaders } from "./cors";
+export { isApiHost } from "./hosts";

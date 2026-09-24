@@ -1,8 +1,3 @@
-/**
- * Shared Stripe helpers for connector checkout.
- * Unwired to live Stripe unless STRIPE_SECRET_KEY is set (test mode recommended).
- */
-
 export type CheckoutInput = {
   connectorSlug: string;
   jobId: string;
@@ -23,10 +18,6 @@ export type CheckoutResult = {
 function stripeSecret(): string | undefined {
   const key = process.env.STRIPE_SECRET_KEY?.trim();
   return key || undefined;
-}
-
-export function stripeConfigured(): boolean {
-  return Boolean(stripeSecret());
 }
 
 export async function createCheckoutSession(input: CheckoutInput): Promise<CheckoutResult> {

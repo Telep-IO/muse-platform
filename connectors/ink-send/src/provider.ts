@@ -1,12 +1,5 @@
-import { HttpError, assertProviderOk, envValue, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
+import { HttpError, assertProviderOk, envValue, modeFulfillment, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
 import { PRICE_CENTS } from "./letters";
-
-const LIVE_NOTE =
-  "Draft only. Handwrytten was not asked to write or mail. A human must review and pay first.";
-
-export function inkLiveNote(): string {
-  return LIVE_NOTE;
-}
 
 export function inkRuntime(env: Env = process.env) {
   const mode = readAppMode("INK_SEND_APP_MODE", env);
@@ -69,15 +62,9 @@ export async function checkInk(env: Env = process.env) {
 
 export function inkDescriptor(env: Env = process.env) {
   const runtime = inkRuntime(env);
-  const ready = runtime.mode !== "demo" && Boolean(runtime.apiKey);
-  return {
-    mode: runtime.mode,
-    fulfillment: runtime.mode === "demo" ? "stub" : ready ? "live" : "missing_credentials",
-    note:
-      runtime.mode === "demo"
-        ? "Create a letter at POST /v1/ink-send/letters. Handwritten-mail fulfillment is not called in demo mode."
-        : ready
-          ? "POST /letters stores a draft and does not order a card. GET /check calls Handwrytten getUser."
-          : "INK_SEND_APP_MODE is test or live but INK_SEND_INK_API_KEY is empty.",
-  };
+  return modeFulfillment(runtime.mode, runtime.mode !== "demo" && Boolean(runtime.apiKey), {
+    demo: "Create a letter at POST /v1/ink-send/letters. Handwritten-mail fulfillment is not called in demo mode.",
+    ready: "POST /letters stores a draft and does not order a card. GET /check calls Handwrytten getUser.",
+    missing: "INK_SEND_APP_MODE is test or live but INK_SEND_INK_API_KEY is empty.",
+  });
 }

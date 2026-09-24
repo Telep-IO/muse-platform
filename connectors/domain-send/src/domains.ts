@@ -1,3 +1,5 @@
+import { applyEvent, memoryStore, withoutOwner } from "@telep/platform";
+
 export type DomainStatus = "draft" | "paid" | "active" | "failed";
 
 export type Domain = {
@@ -38,7 +40,7 @@ const SUPPORTED_TLDS = Object.keys(YEARLY_PRICE_CENTS);
 const STUB_NOTE =
   "Gateway stub: registration is recorded in-memory only. Registrar fulfillment (OpenSRS/Tucows reseller) is not wired on this gateway yet. Only registry-confirmed 'active' means registered. Do not treat this as a registered domain.";
 
-const domains = new Map<string, Domain>();
+const domains = memoryStore<Domain>();
 
 function normalizeDomain(value: unknown): string {
   return String(value ?? "").trim().toLowerCase();
@@ -103,54 +105,18 @@ export function createDomain(input: {
       : STUB_NOTE,
     fulfillment: input.live ? "live" : "stub",
   };
-  domains.set(id, record);
-  return record;
+  return domains.save(record);
 }
 
-export function getDomain(id: string, ownerKeyId: string): Domain | undefined {
-  const record = domains.get(id);
-  if (!record || record.ownerKeyId !== ownerKeyId) return undefined;
-  return record;
-}
+export const getDomain = domains.get;
+export const listDomains = domains.list;
+export const resetDomains = domains.reset;
+export const publicDomain = withoutOwner<Domain>;
 
-export function listDomains(ownerKeyId: string): Domain[] {
-  return [...domains.values()]
-    .filter((d) => d.ownerKeyId === ownerKeyId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export function publicDomain(domain: Domain): Omit<Domain, "ownerKeyId"> {
-  const { ownerKeyId: _omit, ...rest } = domain;
-  return rest;
-}
-
-/**
- * Test/demo-only state transitions. Never wired to a real registrar.
- * paid (draft -> paid), active (paid -> active), failed (paid -> failed).
- */
 export function demoEvent(id: string, ownerKeyId: string, event: string): Domain {
-  const record = getDomain(id, ownerKeyId);
-  if (!record) throw new Error("Domain not found");
-
-  if (event === "paid") {
-    if (record.status !== "draft") throw new Error(`cannot mark paid from status ${record.status}`);
-    record.status = "paid";
-    return record;
-  }
-  if (event === "active") {
-    if (record.status !== "paid") throw new Error(`cannot activate from status ${record.status}`);
-    record.status = "active";
-    return record;
-  }
-  if (event === "failed") {
-    if (record.status !== "paid") throw new Error(`cannot fail from status ${record.status}`);
-    record.status = "failed";
-    return record;
-  }
-  throw new Error(`unknown demo event: ${event}`);
-}
-
-/** Test helper — not used by production routes. */
-export function resetDomains(): void {
-  domains.clear();
+  return applyEvent(getDomain(id, ownerKeyId), "Domain not found", event, {
+    paid: { from: "draft", to: "paid", verb: "mark paid" },
+    active: { from: "paid", to: "active", verb: "activate" },
+    failed: { from: "paid", to: "failed", verb: "fail" },
+  });
 }

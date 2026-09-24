@@ -7,7 +7,7 @@ export function catalogOrigin(): string {
   return process.env.NEXT_PUBLIC_CATALOG_URL || "https://muse.telep.io";
 }
 
-export function apiOrigin(): string {
+function apiOrigin(): string {
   return process.env.NEXT_PUBLIC_API_URL || "https://api.muse.telep.io";
 }
 
@@ -16,7 +16,3 @@ export function publicApiUrl(path: string): string {
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export function publicCatalogUrl(path: string): string {
-  const base = catalogOrigin().replace(/\/$/, "");
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
-}

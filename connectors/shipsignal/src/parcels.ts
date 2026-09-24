@@ -1,3 +1,5 @@
+import { memoryStore, withoutOwner } from "@telep/platform";
+
 export type CarrierGuess = "ups" | "usps" | "fedex" | "dhl" | "unknown";
 
 export type MockPhase = "label_created" | "in_transit" | "out_for_delivery" | "delivered";
@@ -42,7 +44,7 @@ const LOCATIONS = [
   "Destination area (stub)",
 ];
 
-const parcels = new Map<string, Parcel>();
+const parcels = memoryStore<Parcel>();
 
 function fnv1aHex(input: string): string {
   let hash = 0x811c9dc5;
@@ -130,20 +132,13 @@ export function createParcel(input: {
     note: STUB_NOTE,
     fulfillment: "stub",
   };
-  parcels.set(id, parcel);
-  return parcel;
+  return parcels.save(parcel);
 }
 
-export function getParcel(id: string, ownerKeyId: string): Parcel | undefined {
-  const parcel = parcels.get(id);
-  if (!parcel || parcel.ownerKeyId !== ownerKeyId) return undefined;
-  return parcel;
-}
+export const getParcel = parcels.get;
 
 export function listParcels(ownerKeyId: string): Parcel[] {
-  return [...parcels.values()]
-    .filter((parcel) => parcel.ownerKeyId === ownerKeyId)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return parcels.list(ownerKeyId, "updatedAt");
 }
 
 export function refreshParcel(id: string, ownerKeyId: string): Parcel | undefined {
@@ -177,16 +172,10 @@ export function getAccount(ownerKeyId: string) {
   };
 }
 
-export function publicParcel(parcel: Parcel): Omit<Parcel, "ownerKeyId"> {
-  const { ownerKeyId: _omit, ...rest } = parcel;
-  return rest;
-}
+export const publicParcel = withoutOwner<Parcel>;
 
 export function forgetParcel(id: string): void {
   parcels.delete(id);
 }
 
-/** Test helper — not used by production routes. */
-export function resetParcels(): void {
-  parcels.clear();
-}
+export const resetParcels = parcels.reset;

@@ -11,11 +11,11 @@ function extraOrigins(): string[] {
   );
 }
 
-export function allowedOrigins(): string[] {
+function allowedOrigins(): string[] {
   return [...new Set([...DEFAULT_ORIGINS, ...extraOrigins()])];
 }
 
-export function isAllowedOrigin(origin: string | null): boolean {
+function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   if (allowedOrigins().includes(origin)) return true;
   try {
@@ -51,8 +51,4 @@ export function withCors(request: Request, response: Response): Response {
     statusText: response.statusText,
     headers,
   });
-}
-
-export function preflight(request: Request): Response {
-  return new Response(null, { status: 204, headers: corsHeaders(request) });
 }

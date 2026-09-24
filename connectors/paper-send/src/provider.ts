@@ -1,12 +1,5 @@
-import { HttpError, assertProviderOk, basicAuthHeader, envValue, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
+import { HttpError, assertProviderOk, basicAuthHeader, envValue, modeFulfillment, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
 import { priceCents } from "./jobs";
-
-const LIVE_NOTE =
-  "Draft only. Lob was not asked to print or mail this job. A human must review and pay before any letter is created.";
-
-export function paperLiveNote(): string {
-  return LIVE_NOTE;
-}
 
 export function paperRuntime(env: Env = process.env) {
   const mode = readAppMode("PAPER_SEND_APP_MODE", env);
@@ -89,15 +82,9 @@ export async function checkPaper(env: Env = process.env) {
 
 export function paperDescriptor(env: Env = process.env) {
   const runtime = paperRuntime(env);
-  const ready = runtime.mode !== "demo" && Boolean(runtime.lobKey);
-  return {
-    mode: runtime.mode,
-    fulfillment: runtime.mode === "demo" ? "stub" : ready ? "lob" : "missing_credentials",
-    note:
-      runtime.mode === "demo"
-        ? "Create a job at POST /v1/paper-send/jobs. Demo mode does not call Lob."
-        : ready
-          ? "Lob key is set. POST /jobs stores a draft and does not mail. GET /check verifies Lob auth."
-          : "PAPER_SEND_APP_MODE is test or live but PAPER_SEND_LOB_API_KEY is empty.",
-  };
+  return modeFulfillment(runtime.mode, runtime.mode !== "demo" && Boolean(runtime.lobKey), {
+    demo: "Create a job at POST /v1/paper-send/jobs. Demo mode does not call Lob.",
+    ready: "Lob key is set. POST /jobs stores a draft and does not mail. GET /check verifies Lob auth.",
+    missing: "PAPER_SEND_APP_MODE is test or live but PAPER_SEND_LOB_API_KEY is empty.",
+  }, "lob");
 }

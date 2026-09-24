@@ -44,7 +44,7 @@ POST /v1/billing/webhook             → Stripe webhook helper
 Catalog:
 
 ```
-/  /connectors  /connectors/{slug}  /connectors/{slug}/privacy  /connectors/{slug}/terms  /docs  /privacy  /terms
+/  /connectors  /connectors/{slug}  /connectors/{slug}/docs  /connectors/{slug}/privacy  /connectors/{slug}/terms  /docs  /privacy  /terms
 ```
 
 ## API keys

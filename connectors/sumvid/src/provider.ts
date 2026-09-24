@@ -1,4 +1,4 @@
-import { HttpError, assertProviderOk, envValue, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
+import { HttpError, assertProviderOk, envValue, modeFulfillment, providerRequest, readAppMode, requireCredentials, type Env } from "@telep/platform";
 import { createSummary, getAccount, parseYoutubeInput, type Summary } from "./summaries";
 
 function baseUrl(env: Env): string {
@@ -157,15 +157,9 @@ export function sumvidAccount(ownerKeyId: string, env: Env = process.env) {
 
 export function sumvidDescriptor(env: Env = process.env) {
   const runtime = sumvidRuntime(env);
-  const ready = runtime.mode !== "demo" && Boolean(runtime.baseUrl && runtime.apiKey);
-  return {
-    mode: runtime.mode,
-    fulfillment: runtime.mode === "demo" ? "stub" : ready ? "live" : "missing_credentials",
-    note:
-      runtime.mode === "demo"
-        ? "Create a stub summary at POST /v1/sumvid/summaries. No captions are fetched and no paid summarizer is called."
-        : ready
-          ? "POST /v1/sumvid/summaries calls the Sumvid API. GET /check only hits GET /v1/account."
-          : "SUMVID_APP_MODE is test or live but SUMVID_API_BASE_URL or SUMVID_API_KEY is empty.",
-  };
+  return modeFulfillment(runtime.mode, runtime.mode !== "demo" && Boolean(runtime.baseUrl && runtime.apiKey), {
+    demo: "Create a stub summary at POST /v1/sumvid/summaries. No captions are fetched and no paid summarizer is called.",
+    ready: "POST /v1/sumvid/summaries calls the Sumvid API. GET /check only hits GET /v1/account.",
+    missing: "SUMVID_APP_MODE is test or live but SUMVID_API_BASE_URL or SUMVID_API_KEY is empty.",
+  });
 }
