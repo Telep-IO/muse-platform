@@ -198,4 +198,6 @@ auth=( -H "Authorization: Bearer $MUSE_KEY" -H "Content-Type: application/json" 
 
 **Do not point `*_APP_MODE` at `live` for a first smoke.** A live Lob key is refused when mode is `test`. Live mode still does not mail from these routes, but OpenSRS lookups hit the production reseller host, and a live Sumvid key spends real credits.
 
-The Express apps under `services/` can still spend if you deploy them separately and set their own unprefixed keys. This Vercel gateway does not proxy `*_SERVICE_URL`.
+The Express apps under `services/` can still spend if you deploy them separately and set their own unprefixed keys. This Vercel gateway does not proxy `*_SERVICE_URL`, except ShipLabel and PrintMerch. In test and live, ShipLabel calls `SHIP_LABEL_SERVICE_URL` for drafts, checkout, and voids, and PrintMerch calls `PRINT_MERCH_SERVICE_URL` for drafts, checkout reservation, and paid fulfillment. Demo mode does not call either URL.
+
+PrintMerch check is read-only (`GET /v1/shops.json` and the catalog) and refuses to continue unless the shop's order approval is manual. A draft does not submit a production order. Production starts only after the Stripe webhook reports `payment_status` paid.

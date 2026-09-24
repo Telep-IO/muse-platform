@@ -1,6 +1,6 @@
 # services/
 
-Separately deployed Express fulfillment backends for CallSend, DomainSend, FaxSend, InkSend, PaperSend, ShipLabel, and SignSend.
+Separately deployed Express fulfillment backends for CallSend, DomainSend, FaxSend, InkSend, PaperSend, PrintMerch, ShipLabel, and SignSend.
 
 They are **not** part of the Vercel Next.js build and they are **not** npm workspaces. Root `package.json` keeps `workspaces` at `packages/*` and `connectors/*` only, so `express`, `pg`, and these apps' Stripe clients stay out of the Vercel install. Do not import this tree from `app/`, `connectors/`, or `packages/`.
 
@@ -14,6 +14,7 @@ Each directory was added with `git subtree add` from its standalone [Telep-IO](h
 | `services/ink-send` | `inksend` | `package.json`, lockfile, root `schema.sql`, `docs/`, `public/`, `scripts/`, `src/`. No `policies/` directory in the source repo. |
 | `services/paper-send` | `papersend` | `package.json`, `pnpm-lock.yaml`, `Dockerfile`, `compose.yaml`, `compose.deploy.yaml`, `deploy/`, `docs/`, `policies/`, `public/`, `scripts/`, `src/` (Postgres schema at `src/schema.postgres.sql`), `assets/`, tests |
 | `services/sign-send` | `signsend` | `package.json`, lockfile, `docs/`, `policies/`, `public/`, `src/` (Postgres schema at `src/schema.postgres.sql`) |
+| `services/print-merch` | `print-merch` | `package.json`, `docs/`, `policies/`, `src/` (Postgres schema at `src/schema.postgres.sql`), tests. Not a workspace. The gateway calls it over HTTP. |
 | `services/ship-label` | `shiplabel` | `package.json`, `docs/`, `policies/`, `src/` (Postgres schema at `src/schema.postgres.sql`), tests. USPS labels via EasyPost after Stripe payment. Not a workspace. |
 
 CallSend, DomainSend, FaxSend, InkSend, and SignSend did not ship a Dockerfile. PaperSend is the furthest along: it includes a Dockerfile, compose files, and Lob/Stripe fulfillment wiring. Putting that tree in `services/paper-send` changes the code location only. Where PaperSend is deployed does not change.

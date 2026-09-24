@@ -58,6 +58,7 @@ export type ConnectorDef<T> = {
   account?: { run: (ownerKeyId: string) => unknown | Promise<unknown>; description: string };
   indexTools?: boolean;
   openapi: { description: string; tagDescription: string; self?: boolean };
+  extraGets?: { path: string; summary: string }[];
   extraPosts?: { path: string; summary: string; schema: Record<string, unknown> }[];
   beforeTools?: McpTool[];
   match?: (request: Request, segments: string[], auth: AuthResult | null) => Promise<Response | undefined>;
@@ -129,6 +130,7 @@ export function defineConnector<T>(def: ConnectorDef<T>) {
     const item = `${base}/${resource.name}`;
     const paths: OpenApiDocument["paths"] = { [base]: descriptorPath(tag) };
     if (def.openapi.self) paths[`${base}/openapi.json`] = openApiSelfPath(tag);
+    for (const get of def.extraGets ?? []) paths[get.path] = authedGet(tag, get.summary);
     for (const post of def.extraPosts ?? []) {
       paths[post.path] = authedPost(tag, post.summary, post.schema, {
         "200": { description: "OK" },

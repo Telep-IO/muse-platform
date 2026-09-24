@@ -92,7 +92,11 @@ export function draftRest<T>(opts: {
 
     if (opts.quote && segments.length === 1 && segments[0] === "quote" && request.method === "GET") {
       if (!auth) return unauthorized(request);
-      return send(request, opts.quote(request));
+      try {
+        return send(request, await opts.quote(request));
+      } catch (error) {
+        return withCors(request, errorResponse(error));
+      }
     }
 
     const read = opts.reads?.[segments.length === 1 && request.method === "GET" ? segments[0] : ""];
@@ -155,9 +159,13 @@ export function draftRest<T>(opts: {
         }
         const run = known && auth ? col.actions?.[action] : undefined;
         if (run && auth) {
-          const item = await run(segments[1], auth);
-          if (!item) return withCors(request, jsonError(404, "not_found", col.missing));
-          return send(request, col.present(item));
+          try {
+            const item = await run(segments[1], auth);
+            if (!item) return withCors(request, jsonError(404, "not_found", col.missing));
+            return send(request, col.present(item));
+          } catch (error) {
+            return withCors(request, errorResponse(error));
+          }
         }
       }
     }

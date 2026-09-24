@@ -9,6 +9,7 @@ export type CheckoutInput = {
   cancelUrl: string;
   customerEmail?: string;
   description?: string;
+  /** Extra Stripe metadata. `connector` and `jobId` always win over these keys. Values must be strings. */
   metadata?: Record<string, string>;
 };
 
@@ -54,9 +55,9 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<Check
     ],
     client_reference_id: input.jobId,
     metadata: {
+      ...(input.metadata ?? {}),
       connector: input.connectorSlug,
       jobId: input.jobId,
-      ...(input.metadata ?? {}),
     },
   });
 

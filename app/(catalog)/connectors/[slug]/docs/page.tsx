@@ -146,9 +146,15 @@ export default async function ConnectorDocsPage({
         <h2>Demo status</h2>
         <p className="prose">{docs.demoNote}</p>
         <p className="prose">
-          Pricing: {connector.pricingBlurb}{" "}
-          {docs.billingNote ?? "Nothing is billed while the gateway is a stub."}
+          Pricing: {connector.pricingBlurb} {docs.billingNote ?? "Nothing is billed while the gateway is a stub."}
         </p>
+        {docs.disclosures?.length ? (
+          <ul className="prompt-list">
+            {docs.disclosures.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : null}
       </section>
 
       {docs.extraSections?.map((section) => (
