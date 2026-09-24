@@ -245,6 +245,30 @@ export const connectors: Connector[] = [
     productNotes: "On the gateway as a stub: availability checks, registration drafts, and demo state transitions work; provider integration pending.",
     gatewayImplemented: true,
   },
+  {
+    slug: "print-merch",
+    name: "PrintMerch",
+    oneLiner: "Custom printed merchandise: design, mockups, and a live quote, then Printify after you pay.",
+    status: "submitted",
+    category: "merchandise",
+    pricingBlurb: "Live Printify base + shipping + 25% markup (configurable). Demo uses a labeled fixture and does not bill.",
+    repoUrl: "https://github.com/Telep-IO/muse-platform/tree/main/services/print-merch",
+    docsPath: "/connectors/print-merch/docs",
+    apiBasePath: "/v1/print-merch",
+    mcpPath: "/mcp/print-merch",
+    privacyPath: "/connectors/print-merch/privacy",
+    termsPath: "/connectors/print-merch/terms",
+    howMuseUsesIt:
+      "Muse picks a product, uploads artwork, and shows mockups with a live quote. You review the design and pay. The order goes to Printify only after that payment.",
+    examplePrompts: [
+      "Design a mug with this artwork, show me the mockup and the price, and wait for me to pay.",
+      "What's the status of my merch order?",
+      "Cancel my merch order if it is still on hold.",
+    ],
+    productNotes:
+      "PrintMerch lets Muse design custom printed merchandise — pick a product, upload artwork, preview mockups, and get a live quote. You review the design and pay through Stripe; only then is your order sent to Printify for printing and white-label shipping. Demo mode is fully stubbed and never contacts Printify. You must own or be licensed for any artwork you upload. Status ‘submitted’ means Telep filed the connector for Meta review — it is not a Meta partnership, endorsement, or directory listing.",
+    gatewayImplemented: true,
+  },
 ];
 
 const STATUS_ORDER: Record<Connector["status"], number> = {

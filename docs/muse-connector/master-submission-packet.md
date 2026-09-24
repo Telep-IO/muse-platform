@@ -214,6 +214,22 @@ Do not mark this submitted until Jon files it. Forge enrollment is not complete,
 | Your terms of service | https://muse.telep.io/connectors/ship-label/terms |
 | Hosted MCP endpoint | https://api.muse.telep.io/mcp/ship-label |
 
+## 9. PrintMerch
+
+| Field | Value |
+|---|---|
+| Connector name | PrintMerch |
+| Product website | https://muse.telep.io/connectors/print-merch |
+| Example prompts | Design a mug with this artwork, show me the mockup and the price, and wait for me to pay. / What's the status of my merch order? / Cancel my merch order if it is still on hold. |
+| Connector icon | `docs/muse-connector/icons/print-merch.png` (upload) |
+| Your privacy policy | https://muse.telep.io/connectors/print-merch/privacy |
+| Your terms of service | https://muse.telep.io/connectors/print-merch/terms |
+| Anything else? | PrintMerch lets Muse design custom printed merchandise — pick a product, upload artwork, preview mockups, and get a live quote. You review the design and pay through Stripe; only then is your order sent to Printify for printing and white-label shipping. Demo mode is fully stubbed and never contacts Printify. You must own or be licensed for any artwork you upload. |
+| Connection type | Existing MCP |
+| Hosted MCP endpoint | https://api.muse.telep.io/mcp/print-merch |
+| Access requirements | Global text above, plus: price is live Printify base + shipping + 25% markup. Production requires Manual shop approval and a paid Stripe checkout. |
+| Authentication | API keys |
+
 ## Honest readiness note
 
 All 8 MCP endpoints are implemented on this gateway (`gatewayImplemented: true`). The five *-send connectors plus PaperSend are **honest demo stubs** (no provider fulfillment wired yet); Sumvid/ShipSignal are demo stubs too. Meta performs functional + end-to-end testing, so approval is not guaranteed on stub status — the packets disclose this everywhere rather than hiding it. That was a deliberate call: start the review clock with full disclosure, wire providers as keys land.

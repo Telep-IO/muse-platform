@@ -10,6 +10,7 @@ import { handleInkSendMcp, handleInkSendRest, inkSendOpenApi } from "@telep/ink-
 import { handleDomainSendMcp, handleDomainSendRest, domainSendOpenApi } from "@telep/domain-send";
 import { handleSumvidMcp, handleSumvidRest, sumvidOpenApi } from "@telep/sumvid";
 import { handleShipSignalMcp, handleShipSignalRest, shipSignalOpenApi } from "@telep/shipsignal";
+import { handlePrintMerchMcp, handlePrintMerchRest, printMerchOpenApi } from "@telep/print-merch";
 
 type RestHandler = (request: Request, path: string[], auth: AuthResult | null) => Promise<Response>;
 type McpHandler = (request: Request) => Promise<Response>;
@@ -25,6 +26,7 @@ const modules: Record<string, { rest: RestHandler; mcp: McpHandler; openapi: () 
   "domain-send": { rest: handleDomainSendRest, mcp: handleDomainSendMcp, openapi: domainSendOpenApi },
   sumvid: { rest: handleSumvidRest, mcp: handleSumvidMcp, openapi: sumvidOpenApi },
   shipsignal: { rest: handleShipSignalRest, mcp: handleShipSignalMcp, openapi: shipSignalOpenApi },
+  "print-merch": { rest: handlePrintMerchRest, mcp: handlePrintMerchMcp, openapi: printMerchOpenApi },
 };
 
 function restAuthRequired(method: string, path: string[]): boolean {

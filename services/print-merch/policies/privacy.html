@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PrintMerch privacy</title>
+</head>
+<body>
+  <h1>PrintMerch privacy</h1>
+  <p>Telep IO LLC operates PrintMerch. This notice is plain language, not legal advice. Telep IO is independent of Meta.</p>
+  <h2>What we collect</h2>
+  <ul>
+    <li>Product choices, artwork URL, mockup URLs, quantity, and the quoted price.</li>
+    <li>Recipient name, email, phone, and shipping address — sent to Printify only after you pay.</li>
+    <li>Stripe payment status and checkout identifiers. We do not store full card numbers.</li>
+    <li>API key identifiers and standard host logs.</li>
+  </ul>
+  <h2>What we do with it</h2>
+  <p>Demo mode keeps drafts in a local database and does not contact Printify or Stripe. In test and live mode, artwork and the shipping address are sent to Printify to create a product, mockups, and — only after Stripe reports a paid checkout — a production order. Printify prints and ships the goods. Shipping notifications from Printify to the recipient are turned off; Telep IO LLC is the merchant of record.</p>
+  <h2>Retention</h2>
+  <p>Payment-adjacent rows (drafts, checkout sessions, and fulfillment claims) are stored in the fulfillment database for that APP_MODE. Demo gateway drafts use a separate SQLite file. They are not kept in an in-memory map.</p>
+  <h2>Keys</h2>
+  <p>Bearer API keys authenticate agents. Treat them as secrets.</p>
+</body>
+</html>

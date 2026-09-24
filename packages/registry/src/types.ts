@@ -14,6 +14,7 @@ export const CONNECTOR_CATEGORIES = [
   "documents",
   "communications",
   "identity",
+  "merchandise",
   "rewards",
 ] as const;
 
@@ -52,5 +53,6 @@ export const CATEGORY_LABELS: Record<ConnectorCategory, string> = {
   documents: "Documents",
   communications: "Communications",
   identity: "Identity",
+  merchandise: "Merchandise",
   rewards: "Rewards",
 };

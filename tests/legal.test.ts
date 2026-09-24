@@ -13,6 +13,7 @@ const EXPECTED_SLUGS = [
   "ink-send",
   "domain-send",
   "ship-label",
+  "print-merch",
   "gift-send",
 ] as const;
 

@@ -10,6 +10,7 @@ import { checkFax } from "@telep/fax-send";
 import { checkCall } from "@telep/call-send";
 import { checkInk } from "@telep/ink-send";
 import { checkDomainCredentials, openSrsSignature, parseOpenSrsLookup, resolveAvailability } from "@telep/domain-send";
+import { checkPrintMerch } from "@telep/print-merch";
 import { HttpError } from "@telep/platform";
 
 const originalFetch = globalThis.fetch;
@@ -40,6 +41,7 @@ test("demo credential checks do not call fetch", async () => {
   const ink = await checkInk({});
   const domain = await checkDomainCredentials({});
   const shipLabel = await checkShipLabel({});
+  const merch = await checkPrintMerch({});
   const giftSend = await checkGiftSend({});
   assert.equal(called, false);
   assert.equal(giftSend.mode, "demo");
@@ -57,6 +59,8 @@ test("demo credential checks do not call fetch", async () => {
   assert.equal(call.spend, "none");
   assert.equal(ink.spend, "none");
   assert.equal(domain.spend, "none");
+  assert.equal(merch.mode, "demo");
+  assert.equal(merch.printify, "skipped");
   assert.equal(quotePaper(2).amountCents, 524);
 });
 
@@ -95,6 +99,11 @@ test("test mode without keys is a clear error and does not call fetch", async ()
     return true;
   });
   await assert.rejects(() => checkSumvid({ SUMVID_APP_MODE: "live", SUMVID_API_BASE_URL: "https://sumvid.example" }), (error: unknown) => {
+    assert.ok(error instanceof HttpError);
+    assert.equal(error.code, "missing_credentials");
+    return true;
+  });
+  await assert.rejects(() => checkPrintMerch({ PRINT_MERCH_APP_MODE: "live" }), (error: unknown) => {
     assert.ok(error instanceof HttpError);
     assert.equal(error.code, "missing_credentials");
     return true;

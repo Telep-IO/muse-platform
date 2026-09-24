@@ -9,6 +9,7 @@ import { faxSendTools } from "@telep/fax-send";
 import { callSendTools } from "@telep/call-send";
 import { inkSendTools } from "@telep/ink-send";
 import { domainSendTools } from "@telep/domain-send";
+import { printMerchTools } from "@telep/print-merch";
 
 export interface ConnectorToolParamDoc {
   name: string;
@@ -35,10 +36,11 @@ export interface ConnectorDocs {
   /** Replaces the generic stub-billing sentence when the connector charges after payment. */
   billingNote?: string;
   extraSections?: ConnectorDocsSection[];
+  disclosures?: string[];
   tools: ConnectorToolDoc[];
 }
 
-const NOTES: Record<string, { demoNote: string; createEndpoint: string; createExampleBody: string; billingNote?: string; extraSections?: ConnectorDocsSection[] }> = {
+const NOTES: Record<string, Omit<ConnectorDocs, "tools">> = {
   "gift-send": {
     demoNote:
       "Demo mode returns a stub catalog and a stub checkout URL. It does not call Tremendous (including the free sandbox) or Stripe, and a stub draft is not a sent reward. Test mode uses the Tremendous sandbox. Tremendous sends the reward only after the shared billing webhook reports payment_status paid.",
@@ -186,6 +188,23 @@ const NOTES: Record<string, { demoNote: string; createEndpoint: string; createEx
     createEndpoint: "/v1/domain-send/domains",
     createExampleBody: '{"domain":"example.com"}',
   },
+  "print-merch": {
+    demoNote:
+      "Demo mode is fully stubbed and never contacts Printify. test/live reads live Printify costs, shows mockups for review, and sends the order to production only after Stripe reports payment_status paid. You must own or be licensed for any artwork you upload.",
+    createEndpoint: "/v1/print-merch/merch_orders",
+    createExampleBody:
+      '{"blueprint_id":68,"print_provider_id":9,"variant_id":184,"artwork_url":"https://example.com/art.png","quantity":1,"artwork_rights_attested":true,"recipient":{"first_name":"Ada","last_name":"Lovelace","email":"ada@example.com","phone":"+15555550100","country":"US","region":"OH","address1":"1 Main","city":"Cleveland","zip":"44113"}}',
+    billingNote:
+      "Demo mode does not bill. test and live charge the quoted total through Stripe, and only a paid webhook submits the order to Printify.",
+    disclosures: [
+      "Pricing formula: customer total = live Printify base cost + live shipping cost + configured markup. The default markup is 25% (2500 basis points) of base plus shipping. Prices are read per order and are not hardcoded. Printify Premium is optional and is not required for this formula.",
+      "Production timing: the Printify shop must use Manual order approval. Shops otherwise auto-send new orders to production after 24 hours. test/live refuses to boot unless the shop reports manual approval. send_to_production runs only after Stripe payment_status is paid.",
+      "White-label shipping: Printify is not asked to email the recipient a shipping notification. Telep IO LLC is the merchant of record. Production time varies by print provider.",
+      "Cancellation: Printify accepts a cancel only while the order is on-hold or payment-not-received.",
+      "Artwork-rights attestation: you must set artwork_rights_attested to true before a draft can be checked out. You need to own or be licensed for every uploaded design. API-created products skip Printify's standard quality check, so review the mockups before paying.",
+      "Printify attribution: printing and shipping are provided by Printify under its API terms. Charging for the application is allowed (API Terms §E.4). Reselling access to the Printify API is not. Printify has no direct contract with connector users (API Terms §H.2).",
+    ],
+  },
 };
 
 const TOOLS: Record<string, McpTool[]> = {
@@ -199,6 +218,7 @@ const TOOLS: Record<string, McpTool[]> = {
   "call-send": callSendTools,
   "ink-send": inkSendTools,
   "domain-send": domainSendTools,
+  "print-merch": printMerchTools,
 };
 
 function toolParams(schema: Record<string, unknown>): ConnectorToolParamDoc[] {
@@ -219,6 +239,8 @@ export function getConnectorDocs(slug: string): ConnectorDocs | undefined {
   if (!notes || !tools) return undefined;
   return {
     ...notes,
+    billingNote: notes.billingNote,
+    disclosures: notes.disclosures,
     tools: tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
