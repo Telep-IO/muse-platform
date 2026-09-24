@@ -1,5 +1,6 @@
 import { printMerchFulfillmentPlan } from "@/lib/billing-forward";
 import { errorResponse, handleWebhook, HttpError, jsonError, withCors } from "@telep/platform";
+import { fulfillGiftSendPayment } from "@telep/gift-send";
 import { fulfillShipLabelPayment } from "@telep/ship-label";
 
 export async function POST(request: Request) {
@@ -7,7 +8,10 @@ export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   try {
     const result = await handleWebhook(raw, signature, async (session) => {
-      if (session.metadata.connector === "ship-label") return fulfillShipLabelPayment(session);
+      const labeled = await fulfillShipLabelPayment(session);
+      if (labeled) return labeled;
+      const gifted = await fulfillGiftSendPayment(session);
+      if (gifted) return gifted;
       if (session.metadata.connector !== "print-merch") return undefined;
       const plan = printMerchFulfillmentPlan({
         stub: false,

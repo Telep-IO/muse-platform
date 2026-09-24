@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { checkPaper, createJob, quotePaper, resetJobs } from "@telep/paper-send";
+import { checkGiftSend, quoteCents as giftQuoteCents } from "@telep/gift-send";
 import { checkShipLabel, quoteCents } from "@telep/ship-label";
 import { checkSumvid, resetSummaries, summarize } from "@telep/sumvid";
 import { checkShip, resetParcels, trackParcel } from "@telep/shipsignal";
@@ -41,7 +42,11 @@ test("demo credential checks do not call fetch", async () => {
   const domain = await checkDomainCredentials({});
   const shipLabel = await checkShipLabel({});
   const merch = await checkPrintMerch({});
+  const giftSend = await checkGiftSend({});
   assert.equal(called, false);
+  assert.equal(giftSend.mode, "demo");
+  assert.equal(giftSend.tremendous, "skipped");
+  assert.equal(giftQuoteCents(5000, 299), 5299);
   assert.equal(shipLabel.mode, "demo");
   assert.equal(shipLabel.easypost, "skipped");
   assert.equal(quoteCents(737, 199), 936);
@@ -65,6 +70,19 @@ test("test mode without keys is a clear error and does not call fetch", async ()
     called = true;
     return jsonResponse({});
   };
+  await assert.rejects(() => checkGiftSend({ GIFT_SEND_APP_MODE: "test" }), (error: unknown) => {
+    assert.ok(error instanceof HttpError);
+    assert.equal(error.code, "missing_credentials");
+    return true;
+  });
+  await assert.rejects(
+    () => checkGiftSend({ GIFT_SEND_APP_MODE: "live", GIFT_SEND_API_KEY: "present" }),
+    (error: unknown) => {
+      assert.ok(error instanceof HttpError);
+      assert.equal(error.code, "missing_credentials");
+      return true;
+    },
+  );
   await assert.rejects(() => checkShipLabel({ SHIP_LABEL_APP_MODE: "test" }), (error: unknown) => {
     assert.ok(error instanceof HttpError);
     assert.equal(error.code, "missing_credentials");

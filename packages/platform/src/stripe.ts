@@ -91,6 +91,8 @@ export type PaidSession = {
     rate_id?: string;
     postage_cents?: string;
     fee_cents?: string;
+    face_cents?: string;
+    reward_id?: string;
   };
   amountSubtotal: number | null;
   amountTotal: number | null;
@@ -130,6 +132,8 @@ export function paidSessionFromEvent(event: {
       rate_id: text("rate_id"),
       postage_cents: text("postage_cents"),
       fee_cents: text("fee_cents"),
+      face_cents: text("face_cents"),
+      reward_id: text("reward_id"),
     },
     amountSubtotal: typeof object.amount_subtotal === "number" ? object.amount_subtotal : null,
     amountTotal: typeof object.amount_total === "number" ? object.amount_total : null,

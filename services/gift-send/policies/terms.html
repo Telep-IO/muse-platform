@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Terms · GiftSend</title></head>
+<body>
+<main>
+<h1>GiftSend terms</h1>
+<p>Effective 24 September 2026. GiftSend is operated by Telep IO LLC. Contact: jon@telep.io. This is a product notice, not legal advice.</p>
+<h2>The service</h2>
+<p>An agent may draft a digital gift card or prepaid reward. A person reviews it and pays through Stripe. Tremendous delivers the reward only after a webhook with payment_status paid. Drafting does not move funds.</p>
+<h2>Tremendous agreement</h2>
+<p>GiftSend is offered on the Tremendous Platform Client track. Telep IO LLC must be a registered Platform Client. Self-serve API credentials are not a license to resell rewards. If you use GiftSend, the <a href="https://www.tremendous.com/terms/">Tremendous Corporate Client Service Agreement</a> is incorporated into these terms, as required by Platform Client Terms §1.3. Platform Client Terms: <a href="https://www.tremendous.com/platform-client-terms/">https://www.tremendous.com/platform-client-terms/</a>. Live mode does not boot until Platform Client registration with Tremendous Sales is recorded. This page does not claim that registration is finished.</p>
+<h2>Gift cards, prepaid, and charity only</h2>
+<p>Launch scope is digital gift cards, Visa and Mastercard prepaid rewards, and charity. Venmo, PayPal, ACH, bank, and other cash payouts are disabled. Enabling them would require a separate money-transmission review. Tremendous's published fee on the allowed categories is $0. Monetary options are 4–6% and are not offered here.</p>
+<h2>Pricing and funding</h2>
+<p>The customer total is the reward face value plus a service fee (default $2.99). Face value is a pass-through of the Tremendous catalog amount. The Tremendous balance that pays the reward is prefunded by bank ACH. This service does not auto-fund that balance by credit card.</p>
+<h2>Cancellation</h2>
+<p>A reward can be cancelled before the recipient redeems it. Tremendous returns HTTP 422 when a reward is already redeemed, and GiftSend reports that refusal as-is. The Tremendous API also limits cancellation of rewards that have not failed delivery. Contract language allows cancellation until redemption or 7 days, subject to what the cancel endpoint accepts. The service fee is not refunded after Tremendous has accepted the order. Demo cancels do not contact Tremendous.</p>
+<h2>Delivery</h2>
+<p>Delivery methods are email, phone (SMS), or a link the agent relays. Scheduling a future send date is supported by the Tremendous create-order field deliver_at (a date within the next year; time-of-day is ignored). GiftSend v1 does not expose scheduling. Rewards send when payment succeeds.</p>
+<h2>Limits</h2>
+<p>$2,000.00 maximum per payout. $10,000.00 maximum per recipient per rolling day. Amounts above either cap are rejected.</p>
+<h2>Demo</h2>
+<p>Demo mode is a stub. It returns a sample catalog and a local checkout URL. It performs no Tremendous or Stripe calls, including the free sandbox. A stub draft is not a sent reward.</p>
+<h2>No warranty</h2>
+<p>The service is provided as-is. Telep IO LLC is independent of Meta and of Tremendous. Listing GiftSend is not a claim that Meta approved it.</p>
+</main>
+</body>
+</html>

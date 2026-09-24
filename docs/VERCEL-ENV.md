@@ -66,6 +66,25 @@ Postage is the EasyPost USPS rate at draft time. `SHIP_LABEL_SERVICE_FEE_CENTS` 
 
 Shared `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SUCCESS_URL`, and `STRIPE_CANCEL_URL` are the Stripe values. The Express process reads those same unprefixed names.
 
+### GiftSend
+
+Maps to `services/gift-send/.env.example`. The gateway does not import that app. In `test` or `live`, drafts, checkout binding, and cancellation are HTTP calls to `GIFT_SEND_SERVICE_URL`. Demo does not call that URL, Tremendous, or Stripe.
+
+Face value is the Tremendous catalog amount at draft time. `GIFT_SEND_SERVICE_FEE_CENTS` defaults to `299` ($2.99). Tremendous's fee on gift cards, Visa/Mastercard prepaid, and charity is $0. Do not set `GIFT_SEND_APP_MODE=live` until `GIFT_SEND_PLATFORM_CLIENT_REFERENCE` records Platform Client registration with Tremendous Sales. A self-serve API key is not a live credential. The Express app also needs `TREMENDOUS_WEBHOOK_SECRET` in test and live so webhook signatures can be checked.
+
+| Vercel name | Express name |
+| --- | --- |
+| `GIFT_SEND_APP_MODE` | `APP_MODE` — `demo` by default |
+| `GIFT_SEND_API_KEY` | `TREMENDOUS_API_KEY` |
+| `GIFT_SEND_TREMENDOUS_WEBHOOK_SECRET` | `TREMENDOUS_WEBHOOK_SECRET` |
+| `GIFT_SEND_PLATFORM_CLIENT_REFERENCE` | `TREMENDOUS_PLATFORM_CLIENT_REFERENCE` |
+| `GIFT_SEND_SERVICE_FEE_CENTS` | `SERVICE_FEE_CENTS` |
+| `GIFT_SEND_DATABASE_URL` | `DATABASE_URL` |
+| `GIFT_SEND_SERVICE_URL` | no Express equivalent; the gateway's base URL for the service |
+| `GIFT_SEND_SERVICE_TOKEN` | `SERVICE_TOKEN` |
+
+Shared `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SUCCESS_URL`, and `STRIPE_CANCEL_URL` are the Stripe values. The Express process reads those same unprefixed names. Test mode uses `https://testflight.tremendous.com/api/v2`. Live uses `https://api.tremendous.com/api/v2`.
+
 ### Sumvid
 
 There is no `services/sumvid` tree and no sumvid-muse README in this repository (the registry links `Telep-IO/sumvid-muse`). `test`/`live` calls `POST {SUMVID_API_BASE_URL}/v1/summaries` with `Authorization: Bearer {SUMVID_API_KEY}` and JSON `{ youtubeUrl, videoId, language }`. `GET /v1/account` is the credential check. A 402 or `error.code` of `insufficient_credits` is returned with `topUpUrl` when Sumvid sends one.
