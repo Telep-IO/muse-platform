@@ -146,9 +146,21 @@ export default async function ConnectorDocsPage({
         <h2>Demo status</h2>
         <p className="prose">{docs.demoNote}</p>
         <p className="prose">
-          Pricing: {connector.pricingBlurb} Nothing is billed while the gateway is a stub.
+          Pricing: {connector.pricingBlurb}{" "}
+          {docs.billingNote ?? "Nothing is billed while the gateway is a stub."}
         </p>
       </section>
+
+      {docs.extraSections?.map((section) => (
+        <section className="section" key={section.heading}>
+          <h2>{section.heading}</h2>
+          {section.paragraphs.map((paragraph) => (
+            <p className="prose" key={paragraph}>
+              {paragraph}
+            </p>
+          ))}
+        </section>
+      ))}
 
       <section className="section">
         <h2>Related</h2>

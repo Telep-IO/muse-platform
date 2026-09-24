@@ -1,0 +1,20 @@
+{
+  "name": "shiplabel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ShipLabel fulfillment service. USPS labels through EasyPost Forge after a human pays Stripe.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --env-file-if-exists=.env --watch src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "pg": "^8.23.0",
+    "stripe": "^18.5.0"
+  }
+}

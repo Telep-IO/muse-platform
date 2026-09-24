@@ -28,6 +28,10 @@ async function paidCheckout(request: Request, slug: string, label: string, noun:
   if (item.status !== "draft") {
     return withCors(request, jsonError(409, "conflict", `${label} is ${item.status}, checkout only from draft`));
   }
+  const existingSession = (item as { stripeSessionId?: string }).stripeSessionId;
+  if (existingSession) {
+    return withCors(request, jsonError(409, "conflict", `${label} already has checkout session ${existingSession}`));
+  }
   const page = `${catalogOrigin()}/connectors/${slug}#checkout-${item.id}`;
   const session = await createCheckoutSession({
     connectorSlug: slug,
@@ -53,8 +57,8 @@ type Collection<T> = {
   name: string;
   listKey: string;
   missing: string;
-  list: (ownerKeyId: string) => T[];
-  get: (id: string, ownerKeyId: string) => T | undefined;
+  list: (ownerKeyId: string) => T[] | Promise<T[]>;
+  get: (id: string, ownerKeyId: string) => T | undefined | Promise<T | undefined>;
   present: (item: T) => unknown;
   create?: (body: Record<string, unknown>, auth: AuthResult) => Promise<T> | T;
   checkout?: { label: string; noun: string };
@@ -104,7 +108,12 @@ export function draftRest<T>(opts: {
     if (col && segments[0] === col.name) {
       if (segments.length === 1 && request.method === "GET") {
         if (!auth) return unauthorized(request);
-        return send(request, { [col.listKey]: col.list(auth.keyId).map(col.present) });
+        try {
+          const items = await col.list(auth.keyId);
+          return send(request, { [col.listKey]: items.map(col.present) });
+        } catch (error) {
+          return withCors(request, errorResponse(error));
+        }
       }
       if (segments.length === 1 && request.method === "POST" && col.create) {
         if (!auth) return unauthorized(request);
@@ -117,16 +126,21 @@ export function draftRest<T>(opts: {
       }
       if (segments.length === 2 && request.method === "GET") {
         if (!auth) return unauthorized(request);
-        const item = col.get(segments[1], auth.keyId);
-        if (!item) return withCors(request, jsonError(404, "not_found", col.missing));
-        return send(request, col.present(item));
+        try {
+          const item = await col.get(segments[1], auth.keyId);
+          if (!item) return withCors(request, jsonError(404, "not_found", col.missing));
+          return send(request, col.present(item));
+        } catch (error) {
+          return withCors(request, errorResponse(error));
+        }
       }
       if (segments.length === 3 && request.method === "POST") {
         const action = segments[2];
         const known = (action === "checkout" && col.checkout) || (action === "demo-event" && col.demoEvent) || Boolean(col.actions?.[action]);
         if (known && !auth) return unauthorized(request);
         if (known && auth && action === "checkout" && col.checkout) {
-          return paidCheckout(request, opts.slug, col.checkout.label, col.checkout.noun, col.get(segments[1], auth.keyId) as Payable | undefined, col.missing);
+          const item = (await col.get(segments[1], auth.keyId)) as Payable | undefined;
+          return paidCheckout(request, opts.slug, col.checkout.label, col.checkout.noun, item, col.missing);
         }
         if (known && auth && action === "demo-event" && col.demoEvent) {
           const body = await readJson(request);

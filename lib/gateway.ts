@@ -1,6 +1,7 @@
 import { authenticate, emptySpec, isWriteMethod, jsonError, mergeOpenApi, publicApiUrl, rateLimit, rateLimitHeaders, withCors, type AuthResult, type OpenApiDocument } from "@telep/platform";
 import { connectorCount, getConnector, listConnectors } from "@telep/registry";
 import { handlePaperSendMcp, handlePaperSendRest, paperSendOpenApi } from "@telep/paper-send";
+import { handleShipLabelMcp, handleShipLabelRest, shipLabelOpenApi } from "@telep/ship-label";
 import { handleSignSendMcp, handleSignSendRest, signSendOpenApi } from "@telep/sign-send";
 import { handleFaxSendMcp, handleFaxSendRest, faxSendOpenApi } from "@telep/fax-send";
 import { handleCallSendMcp, handleCallSendRest, callSendOpenApi } from "@telep/call-send";
@@ -14,6 +15,7 @@ type McpHandler = (request: Request) => Promise<Response>;
 
 const modules: Record<string, { rest: RestHandler; mcp: McpHandler; openapi: () => OpenApiDocument }> = {
   "paper-send": { rest: handlePaperSendRest, mcp: handlePaperSendMcp, openapi: paperSendOpenApi },
+  "ship-label": { rest: handleShipLabelRest, mcp: handleShipLabelMcp, openapi: shipLabelOpenApi },
   "sign-send": { rest: handleSignSendRest, mcp: handleSignSendMcp, openapi: signSendOpenApi },
   "fax-send": { rest: handleFaxSendRest, mcp: handleFaxSendMcp, openapi: faxSendOpenApi },
   "call-send": { rest: handleCallSendRest, mcp: handleCallSendMcp, openapi: callSendOpenApi },
@@ -48,7 +50,12 @@ export function platformOpenApi() {
         responses: { "200": { description: "OK" } },
       },
     },
-    "/v1/billing/webhook": { post: { summary: "Stripe webhook stub", responses: { "200": { description: "OK" } } } },
+    "/v1/billing/webhook": {
+      post: {
+        summary: "Stripe webhook. ShipLabel buys postage only after payment_status paid. Other connectors are acknowledged.",
+        responses: { "200": { description: "OK" } },
+      },
+    },
   };
   spec.tags = [{ name: "platform", description: "Gateway" }];
   return mergeOpenApi(spec, Object.values(modules).map((mod) => mod.openapi()));

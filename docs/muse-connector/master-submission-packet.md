@@ -200,6 +200,20 @@ Keep `Bearer <redacted>` in this packet. Public privacy/terms pages say “Beare
 - [ ] I understand that submission doesn't guarantee approval and promotion is based on usage and editorial discretion.
 - [ ] I agree to the Muse Connector Terms (read https://muse.ai/platform/terms yourself — it was unavailable when last checked).
 
+## Draft — ShipLabel (not filed by this change)
+
+Do not mark this submitted until Jon files it. Forge enrollment is not complete, so do not describe live labels as ready.
+
+| Field | Value |
+|---|---|
+| Connector name | ShipLabel |
+| Product website | https://muse.telep.io/connectors/ship-label |
+| Description | ShipLabel lets Muse draft a USPS shipping label from sender, recipient, and parcel details. You review the carrier rate, pay postage plus a service fee through Stripe, and EasyPost purchases and issues the label with tracking. Demo mode returns stub rates and labels and never contacts EasyPost. USPS only at launch — UPS and FedEx are excluded because their programs prohibit third-party resale markups. |
+| Connector icon | `docs/muse-connector/icons/ship-label.png` (upload) |
+| Your privacy policy | https://muse.telep.io/connectors/ship-label/privacy |
+| Your terms of service | https://muse.telep.io/connectors/ship-label/terms |
+| Hosted MCP endpoint | https://api.muse.telep.io/mcp/ship-label |
+
 ## Honest readiness note
 
 All 8 MCP endpoints are implemented on this gateway (`gatewayImplemented: true`). The five *-send connectors plus PaperSend are **honest demo stubs** (no provider fulfillment wired yet); Sumvid/ShipSignal are demo stubs too. Meta performs functional + end-to-end testing, so approval is not guaranteed on stub status — the packets disclose this everywhere rather than hiding it. That was a deliberate call: start the review clock with full disclosure, wire providers as keys land.

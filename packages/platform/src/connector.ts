@@ -20,8 +20,8 @@ export type CreateCtx = { keyId: string; catalogOrigin: string; live: boolean };
 type Resource<T> = {
   name: string;
   missing: string;
-  list: (ownerKeyId: string) => T[];
-  get: (id: string, ownerKeyId: string) => T | undefined;
+  list: (ownerKeyId: string) => T[] | Promise<T[]>;
+  get: (id: string, ownerKeyId: string) => T | undefined | Promise<T | undefined>;
   present: (item: T) => unknown;
   summaries: { list: string; create: string; get: string };
   schema: Record<string, unknown>;
@@ -97,15 +97,17 @@ export function defineConnector<T>(def: ConnectorDef<T>) {
   ];
   if (resource.getTool) {
     tools.push(
-      mcpGetTool(resource.getTool.name, resource.getTool.description, resource.missing, (id, owner) => {
-        const item = resource.get(id, owner);
+      mcpGetTool(resource.getTool.name, resource.getTool.description, resource.missing, async (id, owner) => {
+        const item = await resource.get(id, owner);
         return item && resource.present(item);
       }),
     );
   }
   if (resource.listTool) {
     tools.push(
-      mcpListTool(resource.listTool.name, resource.listTool.description, resource.name, (owner) => resource.list(owner).map(resource.present)),
+      mcpListTool(resource.listTool.name, resource.listTool.description, resource.name, async (owner) =>
+        (await resource.list(owner)).map(resource.present),
+      ),
     );
   }
   for (const action of resource.actions ?? []) {

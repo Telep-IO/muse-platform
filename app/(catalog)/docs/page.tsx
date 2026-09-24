@@ -57,6 +57,15 @@ POST ${apiUrl("/mcp/{slug}")}`}</code>
       </p>
       <TryItForm />
 
+      <h2 id="ship-label">ShipLabel</h2>
+      <p>
+        <code>POST /v1/ship-label/shipments</code> drafts a USPS label. Demo mode stores the draft
+        locally and does not call EasyPost or Stripe. Paying is a separate checkout call. Postage is
+        purchased only after Stripe reports <code>payment_status</code> paid. MCP:{" "}
+        <code>{apiUrl("/mcp/ship-label")}</code>. Docs:{" "}
+        <code>/connectors/ship-label/docs</code>.
+      </p>
+
       <h2 id="sumvid">Sumvid stub</h2>
       <p>
         <code>POST /v1/sumvid/summaries</code> records an in-memory stub from a YouTube URL. It does

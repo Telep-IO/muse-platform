@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { checkPaper, createJob, quotePaper, resetJobs } from "@telep/paper-send";
+import { checkShipLabel, quoteCents } from "@telep/ship-label";
 import { checkSumvid, resetSummaries, summarize } from "@telep/sumvid";
 import { checkShip, resetParcels, trackParcel } from "@telep/shipsignal";
 import { checkSign } from "@telep/sign-send";
@@ -37,7 +38,11 @@ test("demo credential checks do not call fetch", async () => {
   const call = await checkCall({});
   const ink = await checkInk({});
   const domain = await checkDomainCredentials({});
+  const shipLabel = await checkShipLabel({});
   assert.equal(called, false);
+  assert.equal(shipLabel.mode, "demo");
+  assert.equal(shipLabel.easypost, "skipped");
+  assert.equal(quoteCents(737, 199), 936);
   assert.equal(paper.mode, "demo");
   assert.equal(paper.spend, "none");
   assert.equal(sumvid.fulfillment, "stub");
@@ -56,6 +61,16 @@ test("test mode without keys is a clear error and does not call fetch", async ()
     called = true;
     return jsonResponse({});
   };
+  await assert.rejects(() => checkShipLabel({ SHIP_LABEL_APP_MODE: "test" }), (error: unknown) => {
+    assert.ok(error instanceof HttpError);
+    assert.equal(error.code, "missing_credentials");
+    return true;
+  });
+  await assert.rejects(() => checkShipLabel({ SHIP_LABEL_APP_MODE: "live" }), (error: unknown) => {
+    assert.ok(error instanceof HttpError);
+    assert.equal(error.code, "missing_credentials");
+    return true;
+  });
   await assert.rejects(() => checkPaper({ PAPER_SEND_APP_MODE: "test" }), (error: unknown) => {
     assert.ok(error instanceof HttpError);
     assert.equal(error.code, "missing_credentials");

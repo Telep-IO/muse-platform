@@ -12,6 +12,7 @@ const EXPECTED_SLUGS = [
   "call-send",
   "ink-send",
   "domain-send",
+  "ship-label",
 ] as const;
 
 test("every catalog connector has matching per-connector legal pages", () => {

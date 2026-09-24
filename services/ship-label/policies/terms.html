@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Terms · ShipLabel</title></head>
+<body>
+<main>
+<h1>ShipLabel terms</h1>
+<p>Effective 24 September 2026. ShipLabel is operated by Telep IO. Contact: jon@telep.io. This is a product notice, not legal advice.</p>
+<h2>The service</h2>
+<p>An agent may draft a USPS label. A person reviews the rate and pays through Stripe. Only a paid Stripe webhook may cause EasyPost to buy postage. Rate shopping before payment does not buy postage.</p>
+<h2>USPS only</h2>
+<p>Launch scope is USPS. UPS is excluded because UPS DAP §4.2 does not permit marking up UPS rates to resell labels, and UPS DAP §4.5 requires a direct UPS agreement plus UPS written consent for platform enrollment. FedEx is excluded because FedEx by Default §3.2 does not permit selling, assigning, or transferring the benefit of pricing to any other party.</p>
+<h2>Pricing</h2>
+<p>The customer total is the EasyPost USPS postage for the selected rate, computed at checkout from EasyPost's rate, plus a service fee (default $1.99, configurable). Postage is a pass-through. The Forge per-label platform fee is set from the Forge Order Form and is not invented here. Live mode does not boot until that Order Form reference is recorded. A self-serve EasyPost Developer Plan key is not a license to resell labels.</p>
+<h2>Void and refunds</h2>
+<p>Cancel submits an EasyPost refund for an unused USPS label. USPS decides whether unused postage is refunded. A label that has been scanned is generally not voidable. The ShipLabel service fee is not refunded once the label has been purchased. Demo voids do not contact EasyPost because no postage was purchased.</p>
+<h2>Demo</h2>
+<p>Demo mode returns stub rates and a stub label. It performs no EasyPost or Stripe calls. A stub label is not proof of postage or tracking.</p>
+<h2>No warranty</h2>
+<p>The service is provided as-is. Telep IO is independent of Meta and of EasyPost. Listing ShipLabel is not a claim that Meta approved it.</p>
+</main>
+</body>
+</html>
