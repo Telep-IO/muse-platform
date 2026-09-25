@@ -390,14 +390,10 @@ export async function buyShippingLabel(
       await serviceCall(env, `/drafts/${id}/release`, ownerKeyId, { method: "POST" }).catch(() => undefined);
       throw error;
     }
-    try {
-      await serviceCall(env, `/drafts/${id}/session`, ownerKeyId, {
-        method: "POST",
-        body: JSON.stringify({ session_id: session.id, checkout_url: session.url }),
-      });
-    } catch (error) {
-      throw error;
-    }
+    await serviceCall(env, `/drafts/${id}/session`, ownerKeyId, {
+      method: "POST",
+      body: JSON.stringify({ session_id: session.id, checkout_url: session.url }),
+    });
     return {
       draft_id: id,
       checkout_url: session.url,
@@ -460,8 +456,7 @@ export async function cancelLabel(labelId: string, ownerKeyId: string, env: Env 
     const row = db.prepare("SELECT * FROM drafts WHERE label_id=? AND owner_key=?").get(id, ownerKeyId) as DraftRow | undefined;
     if (!row?.label_id) throw new HttpError(404, "not_found", "Label not found");
     db.prepare("UPDATE drafts SET label_status='voided' WHERE id=?").run(row.id);
-    const next = db.prepare("SELECT * FROM drafts WHERE id=?").get(row.id) as DraftRow;
-    return { ...rowLabel(next), status: "voided", note: "Demo void. No postage was purchased, so EasyPost was not called." };
+    return { ...rowLabel(row), status: "voided", note: "Demo void. No postage was purchased, so EasyPost was not called." };
   });
 }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { catalogOrigin } from "@telep/platform";
 import "./globals.css";
 
 const display = Fraunces({
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
   },
   description:
     "Catalog of Telep IO connectors for Muse, Meta’s personal assistant. Independent work by Telep IO — not a Meta partnership.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_CATALOG_URL || "https://muse.telep.io"),
+  metadataBase: new URL(catalogOrigin()),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

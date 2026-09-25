@@ -30,7 +30,6 @@ export function normalizeDomain(input) {
   if (!SUPPORTED_TLDS.includes(tld)) throw fail(400, `Only these endings are supported in v1: ${SUPPORTED_TLDS.join(', ')}.`);
   return { domain, tld };
 }
-export const priceFor = (tld, years) => TLD_PRICES[tld] * years;
 export const hashToken = token => createHash('sha256').update(token).digest('hex');
 export const fail = (status, message) => Object.assign(new Error(message), { status });
 const HOUR = 3600000;

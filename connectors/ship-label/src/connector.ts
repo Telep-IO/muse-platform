@@ -171,17 +171,6 @@ const shipLabel = defineConnector({
       name: "create_shipment_draft",
       description:
         "Draft a USPS shipping label from sender, recipient, and parcel details. Returns USPS rates and a quote (postage plus service fee). Rate shopping does not buy postage. Demo mode returns a stub rate and does not call EasyPost.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["from", "to", "parcel"],
-        properties: {
-          from: address,
-          to: address,
-          parcel,
-          carrier_hint: { type: "string", description: "Optional. Only USPS is accepted." },
-        },
-      },
     },
     listTool: { name: "list_shipments", description: "List shipment drafts created with this API key." },
     create(body, ctx) {
