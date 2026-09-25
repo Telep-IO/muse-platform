@@ -1,4 +1,4 @@
-import { authenticate, createCheckoutSession, jsonError, withCors } from "@telep/platform";
+import { authenticate, catalogOrigin, createCheckoutSession, jsonError, withCors } from "@telep/platform";
 
 export async function POST(request: Request) {
   try {
@@ -30,12 +30,13 @@ export async function POST(request: Request) {
     );
   }
 
+  const catalog = catalogOrigin();
   const result = await createCheckoutSession({
     connectorSlug: body.connectorSlug,
     jobId: body.jobId,
     amountCents: body.amountCents,
-    successUrl: body.successUrl || `${process.env.NEXT_PUBLIC_CATALOG_URL || "https://muse.telep.io"}/docs`,
-    cancelUrl: body.cancelUrl || `${process.env.NEXT_PUBLIC_CATALOG_URL || "https://muse.telep.io"}/docs`,
+    successUrl: body.successUrl || `${catalog}/docs`,
+    cancelUrl: body.cancelUrl || `${catalog}/docs`,
     customerEmail: body.customerEmail,
     description: body.description,
   });

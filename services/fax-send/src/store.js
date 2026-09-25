@@ -14,7 +14,8 @@ export function openStore(dataDir) {
   db.exec('PRAGMA synchronous = FULL;');
   db.exec(readFileSync(join(here, '..', 'schema.sql'), 'utf8'));
 
-  const prepare = sql => db.prepare(sql);
+  const prepared = new Map();
+  const prepare = (sql) => prepared.get(sql) ?? prepared.set(sql, db.prepare(sql)).get(sql);
   return {
     db,
     get: (id) => prepare('SELECT * FROM faxes WHERE id = ?').get(id),

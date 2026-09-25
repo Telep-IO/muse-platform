@@ -3,7 +3,7 @@ export type { AuthResult } from "./auth";
 export { errorResponse, HttpError, jsonError } from "./errors";
 export { rateLimit, rateLimitHeaders } from "./rate-limit";
 export { withCors } from "./cors";
-export { isApiHost, publicApiUrl } from "./hosts";
+export { catalogOrigin, isApiHost, publicApiUrl } from "./hosts";
 export { documentPages, emptySpec, mergeOpenApi, parsePostalAddress, postalAddress } from "./openapi";
 export type { OpenApiDocument } from "./openapi";
 export { createCheckoutSession, dispatchStripeEvent, handleWebhook, paidSessionFromEvent } from "./stripe";
